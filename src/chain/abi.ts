@@ -19,3 +19,15 @@ export const AUDIT_ANCHOR_ABI = parseAbi([
   "function get(uint256 index) view returns ((bytes32 root, uint64 fromSeq, uint64 toSeq, uint64 timestamp))",
   "event Anchored(uint256 indexed index, bytes32 indexed root, uint64 fromSeq, uint64 toSeq)",
 ]);
+
+export const INTENT_GATE_ABI = parseAbi([
+  "function commit(bytes32 intentHash, bytes32 policyHash) returns (uint256)",
+  "function count() view returns (uint256)",
+  "function committedAt(bytes32 intentHash) view returns (uint64)",
+  "event IntentCommitted(uint256 indexed index, bytes32 indexed intentHash, bytes32 policyHash, uint64 timestamp)",
+  "error NotCommitter()",
+  "error ZeroHash()",
+  "error AlreadyCommitted()",
+  "error PausedOnchain()",
+  "error PolicyMismatch(bytes32 onchain, bytes32 given)",
+]);

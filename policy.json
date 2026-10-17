@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 5,
   "pairs": {
     "P_AVAX": { "spot": "AVAX-USDT", "swap": "AVAX-USDT-SWAP" },
     "P_BTC": { "spot": "BTC-USDT", "swap": "BTC-USDT-SWAP" },
@@ -21,5 +21,8 @@
   "balanceBucketsUsdt": [50, 200],
   "chainCacheSeconds": 30,
   "anchorEveryDecisions": 20,
-  "anchorEverySeconds": 300
+  "anchorEverySeconds": 300,
+  "intentCommit": true,
+  "untrusted": { "taintSeconds": 900, "requireApproval": true, "approvalFor": "web_or_flagged", "requireSignal": true, "rsiOverbought": 70, "rsiOversold": 30 },
+  "compat": { "enabled": true, "accountReads": "deny", "contentReads": "sanitized" }
 }

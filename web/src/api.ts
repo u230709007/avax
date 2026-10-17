@@ -1,4 +1,7 @@
-/** Guardian API istemcisi. Token URL'den (?token=) bir kez alınır, sessionStorage'da tutulur. */
+/**
+ * Guardian API istemcisi. İki kimlik: sahip UI token'ı (URL'den ?token= bir kez alınır, sessionStorage'da tutulur)
+ * veya kişisel hesap oturumu (Supabase erişim token'ı, her istekte tazelenir; sunucu doğrular, docs/tenants.md).
+ */
 const KEY = "guardian-token";
 
 export function getToken(): string | null {
@@ -28,11 +31,35 @@ export function setToken(t: string) {
 }
 
 let token = getToken();
+let accountToken: (() => Promise<string | null>) | null = null;
 export const hasToken = () => Boolean(token);
 export const useToken = (t: string) => {
   token = t;
+  accountToken = null;
   setToken(t);
 };
+/** Kişisel hesap modu: istekler UI token yerine kullanıcının kendi oturumuyla gider. */
+export const useAccountSession = (get: () => Promise<string | null>) => {
+  accountToken = get;
+  token = null;
+};
+export const clearAuth = () => {
+  token = null;
+  accountToken = null;
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {
+    /* yok say */
+  }
+};
+
+async function authHeaders(): Promise<Record<string, string>> {
+  if (accountToken) {
+    const t = await accountToken();
+    return t ? { authorization: `Bearer ${t}` } : {};
+  }
+  return { "x-ui-token": token ?? "" };
+}
 
 export class ApiError extends Error {
   constructor(
@@ -46,7 +73,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const res = await fetch(path, {
     method: init?.method ?? "GET",
-    headers: { "x-ui-token": token ?? "", ...(init?.body !== undefined ? { "content-type": "application/json" } : {}) },
+    headers: { ...(await authHeaders()), ...(init?.body !== undefined ? { "content-type": "application/json" } : {}) },
     body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
@@ -60,9 +87,11 @@ export function connectWs(onEvent: (e: WsEvent) => void, onStatus: (open: boolea
   let ws: WebSocket | undefined;
   let closed = false;
   let retry: number | undefined;
-  const open = () => {
+  const open = async () => {
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    ws = new WebSocket(`${proto}://${location.host}/ws?token=${encodeURIComponent(token ?? "")}`);
+    const auth = accountToken ? `access_token=${encodeURIComponent((await accountToken()) ?? "")}` : `token=${encodeURIComponent(token ?? "")}`;
+    if (closed) return;
+    ws = new WebSocket(`${proto}://${location.host}/ws?${auth}`);
     ws.onopen = () => onStatus(true);
     ws.onmessage = (m) => {
       try {
@@ -73,10 +102,10 @@ export function connectWs(onEvent: (e: WsEvent) => void, onStatus: (open: boolea
     };
     ws.onclose = () => {
       onStatus(false);
-      if (!closed) retry = window.setTimeout(open, 2000);
+      if (!closed) retry = window.setTimeout(() => void open(), 2000);
     };
   };
-  open();
+  void open();
   return () => {
     closed = true;
     if (retry) clearTimeout(retry);

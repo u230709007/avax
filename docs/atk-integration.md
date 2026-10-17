@@ -21,6 +21,8 @@ OKX'e tek erişim yolu: `@okx_ai/okx-trade-mcp@1.4.8` (MCP stdio). LLM ATK tool'
 | `news_get_latest`, `news_get_by_coin` | haber (karantinaya gider) |
 `account_transfer`, earn, bot, option, futures vb. çağrılamaz (allowlist + modül filtresi).
 
+`AtkClient.toolDefs(names)`: açılıştaki `tools/list`'ten allowlist'teki tool'ların gerçek tanımları; ATK uyumlu kapı (`docs/compat.md`) bunları aynen yayınlar.
+
 ### LLM'e açık 7 tool
 `get_market_view`, `get_portfolio_view`, `get_news_digest`, `read_url`, `propose_trade`, `close_position`, `cancel_order`.
 
@@ -34,4 +36,4 @@ OKX'e tek erişim yolu: `@okx_ai/okx-trade-mcp@1.4.8` (MCP stdio). LLM ATK tool'
 `npm run test:integration` (ATK bağlantısı + `missingTools() == []` + gerçek fiyat/bakiye).
 
 ## Son güncelleme
-2026-10-17 · OKX anahtarları .env üzerinden de verilebiliyor.
+2026-10-17 · `toolDefs` (ATK uyumlu kapı için gerçek şemalar). Öncesi: OKX anahtarları .env üzerinden de verilebiliyor.

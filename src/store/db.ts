@@ -59,6 +59,29 @@ export class Store {
         k TEXT PRIMARY KEY,
         v TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        plan TEXT NOT NULL,
+        key_hash TEXT NOT NULL UNIQUE,
+        created INTEGER NOT NULL,
+        revoked INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS usage (
+        id INTEGER PRIMARY KEY,
+        ts INTEGER NOT NULL,
+        key_id TEXT NOT NULL,
+        tool TEXT NOT NULL,
+        status TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS usage_key_ts ON usage (key_id, ts);
+      CREATE TABLE IF NOT EXISTS intents (
+        id INTEGER PRIMARY KEY,
+        ts INTEGER NOT NULL,
+        intent_hash TEXT NOT NULL,
+        tx_hash TEXT NOT NULL,
+        commit_ms INTEGER NOT NULL
+      );
     `);
   }
 
@@ -83,5 +106,15 @@ export class Store {
   ordersSince(ts: number): number {
     const row = this.db.prepare("SELECT COUNT(*) AS c FROM fills WHERE ts >= ?").get(ts) as { c: number };
     return row.c;
+  }
+
+  recordIntent(ts: number, intentHash: string, txHash: string, commitMs: number): void {
+    this.db.prepare("INSERT INTO intents (ts, intent_hash, tx_hash, commit_ms) VALUES (?, ?, ?, ?)").run(ts, intentHash, txHash, commitMs);
+  }
+
+  recentIntents(limit = 20): { ts: number; intentHash: string; txHash: string; commitMs: number }[] {
+    return this.db
+      .prepare("SELECT ts, intent_hash AS intentHash, tx_hash AS txHash, commit_ms AS commitMs FROM intents ORDER BY id DESC LIMIT ?")
+      .all(limit) as { ts: number; intentHash: string; txHash: string; commitMs: number }[];
   }
 }

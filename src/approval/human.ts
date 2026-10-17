@@ -13,6 +13,8 @@ export interface ApprovalSummary {
   slPct?: number;
   tpPct?: number;
   rules: { rule: string; ok: boolean; detail?: string }[];
+  /** Neden onaya düştü: SIZE (tutar eşiği), UNTRUSTED_CONTENT (güvenilmeyen içerik okundu). */
+  reasons?: ("SIZE" | "UNTRUSTED_CONTENT")[];
 }
 
 export interface Approval {

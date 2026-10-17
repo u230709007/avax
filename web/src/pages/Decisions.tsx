@@ -11,7 +11,7 @@ const FILTERS = [
   { id: "agent", label: "Ajan notları", fn: (_o: string, t: string) => t === "agent_note" },
 ] as const;
 
-export function Decisions({ state }: { state: State }) {
+export function Decisions({ state, readOnly = false }: { state: State; readOnly?: boolean }) {
   const [f, setF] = useState<(typeof FILTERS)[number]["id"]>("all");
   const filter = FILTERS.find((x) => x.id === f)!;
   return (
@@ -27,7 +27,8 @@ export function Decisions({ state }: { state: State }) {
         </div>
       }
     >
-      <DecisionsTable rows={state.decisions} anchors={state.anchors} explorer={state.status?.chain.explorer} filter={(r) => filter.fn(r.outcome, r.tool)} />
+      <DecisionsTable readOnly={readOnly} rows={state.decisions} anchors={state.anchors} explorer={state.status?.chain.explorer} filter={(r) => filter.fn(r.outcome, r.tool)} />
     </Card>
   );
 }
+

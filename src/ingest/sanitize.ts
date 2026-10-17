@@ -210,3 +210,51 @@ export function sanitize(input: string, opts: { isHtml?: boolean } = {}): Saniti
 
   return { text: text.slice(0, MAX_TEXT), flags: [...flags], decoded };
 }
+
+/** Sohbette meşru kullanımı olmayan gizleme bayrakları: bunlardan biri varsa mesaj ajana hiç gitmez. */
+export const CHAT_BLOCK_FLAGS: readonly SanitizeFlag[] = ["UNICODE_TAGS", "MORSE", "BASE64", "HEX_TEXT"];
+
+export interface ChatInputResult {
+  /** Ajana gidecek metin: görünmez karakterler silinmiş, adresler maskelenmiş. */
+  text: string;
+  flags: SanitizeFlag[];
+  /** Gizleme bayraklarından biri varsa true; mesaj LLM'e gönderilmez. */
+  blocked: boolean;
+  decoded: SanitizeResult["decoded"];
+}
+
+/**
+ * Kullanıcının sohbet girdisi (yapıştırılmış sayfa metni dahil). Kullanıcı güvenilir, yapıştırdığı içerik değil:
+ * görünmez karakterler silinir, adresler maskelenir, kodlanmış içerik (Mors/base64/hex/unicode tag) varsa mesaj durdurulur.
+ * Talimat kalıpları burada engel değildir ("şunu gönder" kullanıcının meşru isteği olabilir); işlemi guardian kuralları durdurur.
+ */
+export function sanitizeChatInput(input: string): ChatInputResult {
+  const s = sanitize(input);
+  const blocked = s.flags.some((f) => CHAT_BLOCK_FLAGS.includes(f));
+  let text = s.text.replace(new RegExp(EVM_ADDRESS_RE, "g"), "[adres gizlendi]");
+  text = text.replace(new RegExp(BASE58_ADDR_RE, "g"), (m) => (hasBase58Address(m) ? "[adres gizlendi]" : m));
+  return { text, flags: s.flags, blocked, decoded: s.decoded };
+}
+
+/**
+ * Güvenilmeyen içerikte (web, haber) metni LLM'e hiç göndermeyen bayraklar. Gizli öğe metni `text` içinde kalır,
+ * bu yüzden HIDDEN_TEXT de engeldir. Kalan bayraklar (görünmez karakter silindi, adres maskelendi) bilgi amaçlıdır.
+ */
+export const CONTENT_BLOCK_FLAGS: readonly SanitizeFlag[] = ["HIDDEN_TEXT", "INSTRUCTION", ...CHAT_BLOCK_FLAGS];
+
+export interface InspectedContent {
+  /** true: metin LLM'e gider; false: sadece bayraklar ve neden gider. */
+  delivered: boolean;
+  text?: string;
+  flags: SanitizeFlag[];
+  decoded: SanitizeResult["decoded"];
+}
+
+/** ATK uyumlu kapının "sanitized" görünümü (docs/compat.md): ham içerik taranır, temizse arındırılmış hali, değilse hiçbiri gider. */
+export function inspectUntrusted(input: string, opts: { isHtml?: boolean } = {}): InspectedContent {
+  const s = sanitize(input, opts);
+  if (s.flags.some((f) => CONTENT_BLOCK_FLAGS.includes(f))) return { delivered: false, flags: s.flags, decoded: s.decoded };
+  let text = s.text.replace(new RegExp(EVM_ADDRESS_RE, "g"), "[adres gizlendi]");
+  text = text.replace(new RegExp(BASE58_ADDR_RE, "g"), (m) => (hasBase58Address(m) ? "[adres gizlendi]" : m));
+  return { delivered: true, text, flags: s.flags, decoded: s.decoded };
+}

@@ -22,6 +22,7 @@ export interface ChainSnapshot {
   error?: string;
   policyRegistry?: string;
   auditAnchor?: string;
+  intentGate?: string;
   explorer?: string;
 }
 
@@ -33,9 +34,12 @@ export interface LlmOption {
 }
 
 export interface Status {
+  /** owner: UI token; account: e-postayla giriş yapan kullanıcının kendi Guardian'ı. */
+  role?: "owner" | "account";
+  account?: { email: string } | null;
   okx: { connected: boolean; demo: boolean; error?: string; missingTools: string[] };
   chain: ChainSnapshot;
-  anchorer: { lastError?: string };
+  anchorer: { lastError?: string; enabled?: boolean };
   chatEnabled: boolean;
   agent: string | null;
   llm: LlmOption[];
@@ -81,6 +85,7 @@ export interface Approval {
     slPct?: number;
     tpPct?: number;
     rules: { rule: string; ok: boolean; detail?: string }[];
+    reasons?: ("SIZE" | "UNTRUSTED_CONTENT")[];
   };
 }
 

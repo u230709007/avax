@@ -1,0 +1,38 @@
+00:00:00,000 — 00:00:18,000
+Sealed Intent Guardian, yapay zekâ ajanları ile işlem araçları arasına yerleşen bir güvenlik katmanı. Ajan piyasayı değerlendirirken, Guardian işlem yetkisini belirlenen kurallarla sınırlar. Temel yaklaşımımız: veriyi maskelemek, isteği denetlemek ve kararın izini tutmak.
+
+00:00:18,000 — 00:00:34,000
+Normal akışta ajan, işlem aracına doğrudan bağlanır. Guardian kullanılan akışta ise her istek önce ayrı bir kontrolden geçer. Modelin ürettiği öneriyi kod değerlendirir. Uygun emirler, OKX Agent Trade Kit üzerinden iletilir.
+
+00:00:34,000 — 00:00:49,000
+Bu ayrım, dış içerikteki talimatlar ajanı etkilediğinde önem kazanır. Ajan bir işlem önerebilir, fakat işlem büyüklüğü ve kaldıraç gibi sınırları değiştiremez. Gereken durumlarda sistem kullanıcıdan onay bekler.
+
+00:00:49,000 — 00:01:03,000
+İşlem akışı, istekle başlar. Ardından kural kontrolü ve gerekiyorsa insan onayı gelir. Ajan kendi işlemini onaylayamaz. Sonrasında işlem ve kayıt aşamalarına geçilir. Böylece kararın nasıl oluştuğu takip edilebilir.
+
+00:01:03,000 — 00:01:18,000
+Güvenlik testleri bölümünde saldırı senaryolarını ve Guardian'ın verdiği sonuçları görüyoruz. Gizli metin, şüpheli talimat ve adres gibi işaretler burada incelenebiliyor. İçerik uyarısıyla işlem reddi ayrı sonuçlar olarak gösteriliyor.
+
+00:01:18,000 — 00:01:32,000
+Sisteme iki yoldan erişilebiliyor. Geliştiriciler kendi ajanlarını em si pi bağlantısıyla Guardian'a bağlayabiliyor. Kullanıcı ise kontrol panelinden hesap durumunu, işlem kararlarını ve gerekli onayları takip edebiliyor.
+
+00:01:32,000 — 00:01:50,000
+Şimdi kontrol panelindeyiz. Genel bakış ekranı toplam varlıkları, günlük kâr ve zararı, yirmi dört saatlik limit kullanımını gösteriyor. Alt bölümde portföy değerinin değişimini izliyoruz. Bunlar demo hesabındaki değerler. Kullanıcının gördüğü bilgiler ile modele aktarılan bilgiler birbirinden ayrılıyor.
+
+00:01:50,000 — 00:02:07,000
+Sohbet ekranında ajanla doğal dille iletişim kuruluyor. Sağdaki mesaj ayrıntıları, modelin hangi verileri gördüğünü incelememizi sağlıyor. Böylece yalnızca son yanıtı değil, model ile Guardian arasındaki bilgi akışını da gözlemleyebiliyoruz.
+
+00:02:07,000 — 00:02:25,000
+Bakiye sorusunun yanıtında, kullanıcıya hesap bilgileri sunulurken model tarafında maskeli etiketler kullanılıyor. Ardından küçük bir Avalanche alım isteği veriliyor. Bu istek doğrudan emir sayılmıyor. Guardian, işlem önerisini limitler ve gerekli onay koşulları açısından değerlendiriyor.
+
+00:02:25,000 — 00:02:43,000
+Şimdi kontrollü saldırı sayfaları analiz ediliyor. Mors kodu taşıyan içerik ile gizli talimat içeren sayfa, şüpheli işaretler üretiyor. Amaç, sayfadaki yönlendirmeleri işlem yetkisine dönüştürmemek. Karantina katmanı içeriği işlerken, son işlem sınırlarını yine Guardian'ın kuralları belirliyor.
+
+00:02:43,000 — 00:02:59,000
+Em si pi bağlantısı bölümünde, başka ajanların sisteme nasıl bağlanacağı gösteriliyor. Bağlantı adresleri, istemci ayarları ve kullanım planları aynı yerde bulunuyor. Böylece Guardian, tek bir sohbet arayüzünün ötesinde, farklı ajanların kullanabileceği bir servis olarak sunulabiliyor.
+
+00:02:59,000 — 00:03:13,000
+Güvenlik testlerine döndüğümüzde her senaryonun sonucunu ayrı ayrı görebiliyoruz. Politika reddi, içerik uyarısı ve belirsiz sonuç birbirinden ayrılıyor. Bu kayıtlar belirli denemelerin sonucunu gösterir. Bütün saldırılara karşı mutlak güvenlik garantisi anlamına gelmez.
+
+00:03:13,000 — 00:03:23,200
+Guardian'ın amacı, ajanın yetkisini sınırlamak ve kararlarını denetlenebilir kılmak. Kurallara uygun işlemler de zarar edebilir. Ajan düşünür, Guardian sınırları kontrol eder.

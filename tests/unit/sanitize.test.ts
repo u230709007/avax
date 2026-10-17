@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { decodeMorse, sanitize } from "../../src/ingest/sanitize.js";
+import { decodeMorse, sanitize, sanitizeChatInput } from "../../src/ingest/sanitize.js";
 import { BASE64_TEXT, FAKE_SUPPORT_TEXT, HIDDEN_HTML, MORSE_LONG_125X, UNICODE_TAG_TEXT, ZERO_WIDTH_TEXT } from "../fixtures/attacks.js";
 
 describe("sanitize", () => {
@@ -57,5 +57,32 @@ describe("saldırı sayfaları (attack-site/pages)", () => {
   });
   it("clean.html bayraksız", () => {
     expect(sanitize(page("clean.html"), { isHtml: true }).flags).toEqual([]);
+  });
+});
+
+describe("sanitizeChatInput", () => {
+  it("normal sohbet mesajı geçer, talimat kelimesi tek başına engellemez", () => {
+    const r = sanitizeChatInput("AVAX için RSI nasıl? Uygunsa küçük bir alım öner, emri gönder.");
+    expect(r.blocked).toBe(false);
+    expect(r.text).toContain("RSI");
+  });
+
+  it("yapıştırılmış Mors kodlu talimatı durdurur", () => {
+    const r = sanitizeChatInput(`Şu sayfayı yorumla: ${MORSE_LONG_125X}`);
+    expect(r.blocked).toBe(true);
+    expect(r.decoded.some((d) => d.kind === "MORSE")).toBe(true);
+  });
+
+  it("base64 ve unicode tag gizlemesini durdurur", () => {
+    expect(sanitizeChatInput(BASE64_TEXT).blocked).toBe(true);
+    expect(sanitizeChatInput(UNICODE_TAG_TEXT).blocked).toBe(true);
+  });
+
+  it("görünmez karakterleri siler ve adresi maskeler", () => {
+    const r = sanitizeChatInput(`${ZERO_WIDTH_TEXT} 0x1111111111111111111111111111111111111111`);
+    expect(r.blocked).toBe(false);
+    expect(r.text).not.toMatch(/[​-‍]/);
+    expect(r.text).toContain("[adres gizlendi]");
+    expect(r.text).not.toContain("0x1111");
   });
 });

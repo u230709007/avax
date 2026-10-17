@@ -1,14 +1,16 @@
 // docs: docs/WORKFLOW.md
 import { EventEmitter } from "node:events";
+import { randomBytes } from "node:crypto";
+import { keccak256, toBytes, type Hex } from "viem";
 import type { Policy } from "./config/policy.js";
 import type { Store } from "./store/db.js";
 import type { Vault } from "./masking/vault.js";
 import type { AuditLog } from "./audit/log.js";
-import type { AvalancheGuard, ChainSnapshot } from "./chain/avalanche.js";
+import { IntentCommitError, type AvalancheGuard, type ChainSnapshot } from "./chain/avalanche.js";
 import type { Approvals, ApprovalSummary } from "./approval/human.js";
 import type { AtkTools, OkxBalanceDetail, OkxPosition } from "./upstream/atkTools.js";
 import { AtkError } from "./upstream/atkClient.js";
-import { sanitize, type SanitizeResult } from "./ingest/sanitize.js";
+import { inspectUntrusted, sanitize, sanitizeChatInput, type InspectedContent, type SanitizeResult } from "./ingest/sanitize.js";
 import type { DigestItem } from "./llm/quarantine.js";
 import { CancelOrderSchema, ClosePositionSchema, ReadUrlSchema, TradeIntentSchema, type TradeIntent } from "./policy/intent.js";
 import { evaluate, type Verdict } from "./policy/engine.js";
@@ -54,6 +56,25 @@ function round(n: number, step: number): number {
 function roundPx(n: number, tick: number): string {
   const decimals = Number.isFinite(tick) && tick > 0 ? Math.max(0, -Math.floor(Math.log10(tick))) : 8;
   return (Math.round(n / tick) * tick).toFixed(decimals);
+}
+
+/**
+ * Bayraklı öğe (gizli metin, kodlama, talimat, adres, karantina hatası) karar LLM'ine yön veremez:
+ * duygusu kod tarafından nötr/0 yapılır. Karantina modeli kandırılmış olsa bile sahte "positive 0.99" geçmez.
+ */
+export function neutralizeFlagged(items: DigestItem[]): DigestItem[] {
+  return items.map((it) => (it.flags.length ? { ...it, sentiment: "neutral", score: 0 } : it));
+}
+
+/** `*` her host'u açar ama loopback, özel ağ ve link-local IP'leri değil (SSRF). DNS ile özel IP'ye çözülen ad yine risktir. */
+export function hostAllowed(host: string, allowlist: string[]): boolean {
+  if (allowlist.includes(host)) return true;
+  if (!allowlist.includes("*")) return false;
+  const h = host.replace(/^\[|\]$/g, "").toLowerCase();
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return false;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
+  if (h.includes(":")) return false; // IPv6 literal: hepsi kapalı
+  return true;
 }
 
 /**
@@ -196,7 +217,10 @@ export class Guardian extends EventEmitter {
       decoded.push(...s.decoded);
       parts.push(`### item\n${s.text}`);
     }
-    const items = parts.length ? await this.d.quarantine(parts.join("\n\n"), [...flags]) : [];
+    this.markUntrusted("get_news_digest", flags.size > 0);
+    const rawItems = parts.length ? await this.d.quarantine(parts.join("\n\n"), [...flags]) : [];
+    const items = neutralizeFlagged(rawItems);
+    if (items.some((i) => i.flags.length)) this.markUntrusted("get_news_digest", true);
     const result = { source: "okx_news", count: articles.length, items };
     this.d.audit.append({
       source: "llm",
@@ -204,31 +228,37 @@ export class Guardian extends EventEmitter {
       input: {},
       outcome: flags.size ? "WARNING" : "OK",
       code: flags.size ? [...flags].join(",") : undefined,
-      detail: { items, decoded },
+      detail: { items, rawItems, decoded },
     });
     return result;
   }
 
-  async readUrl(raw: unknown): Promise<ToolResult> {
+  /** İzinli sayfayı çeker; ret durumunda audit'e yazılmış ToolResult döner. `*` allowlist'i loopback/özel IP hariç her host'u açar. */
+  private async fetchPage(raw: unknown): Promise<{ url: URL; body: string; isHtml: boolean } | { rejected: ToolResult }> {
     const parsed = ReadUrlSchema.safeParse(raw);
-    if (!parsed.success) return this.reject("read_url", raw, "SCHEMA_INVALID", parsed.error.issues[0]?.message);
+    if (!parsed.success) return { rejected: this.reject("read_url", raw, "SCHEMA_INVALID", parsed.error.issues[0]?.message) };
     const url = new URL(parsed.data.url);
-    if (!["http:", "https:"].includes(url.protocol) || !this.d.readUrlAllowlist.includes(url.hostname)) {
-      return this.reject("read_url", { host: url.hostname }, "HOST_NOT_ALLOWED", url.hostname);
+    if (!["http:", "https:"].includes(url.protocol) || !hostAllowed(url.hostname, this.d.readUrlAllowlist)) {
+      return { rejected: this.reject("read_url", { host: url.hostname }, "HOST_NOT_ALLOWED", url.hostname) };
     }
-    let body: string;
-    let isHtml = false;
     try {
       const res = await (this.d.fetchImpl ?? fetch)(url, { signal: AbortSignal.timeout(10_000), redirect: "error" });
       const ct = res.headers.get("content-type") ?? "";
-      if (!/text\/|html|json/.test(ct)) return this.reject("read_url", { url: url.href }, "CONTENT_TYPE_NOT_ALLOWED", ct);
-      isHtml = ct.includes("html");
-      body = (await res.text()).slice(0, 2_000_000);
+      if (!/text\/|html|json/.test(ct)) return { rejected: this.reject("read_url", { url: url.href }, "CONTENT_TYPE_NOT_ALLOWED", ct) };
+      return { url, body: (await res.text()).slice(0, 2_000_000), isHtml: ct.includes("html") };
     } catch (e) {
-      return this.reject("read_url", { url: url.href }, "FETCH_FAILED", (e as Error).message);
+      return { rejected: this.reject("read_url", { url: url.href }, "FETCH_FAILED", (e as Error).message) };
     }
+  }
+
+  async readUrl(raw: unknown): Promise<ToolResult> {
+    const page = await this.fetchPage(raw);
+    if ("rejected" in page) return page.rejected;
+    const { url, body, isHtml } = page;
     const s = sanitize(body, { isHtml });
-    const items = await this.d.quarantine(s.text, s.flags);
+    this.markUntrusted("read_url", true);
+    const rawItems = await this.d.quarantine(s.text, s.flags);
+    const items = neutralizeFlagged(rawItems);
     const allFlags = [...new Set(items.flatMap((i) => i.flags))];
     this.d.audit.append({
       source: "llm",
@@ -236,9 +266,71 @@ export class Guardian extends EventEmitter {
       input: { url: url.href },
       outcome: allFlags.length ? "WARNING" : "OK",
       code: allFlags.length ? allFlags.join(",") : undefined,
-      detail: { items, decoded: s.decoded },
+      detail: { items, rawItems, decoded: s.decoded },
     });
     return { url: url.href, items };
+  }
+
+  // ───────────── ATK uyumlu kapı: "sanitized" içerik görünümü (docs/compat.md) ─────────────
+  // LLM ham içeriği görür ama önce guardian tarar: bayraklı içeriğin metni gitmez, her okuma taint başlatır ve audit'e düşer.
+
+  /** Web sayfası: tarandıktan sonra temizse arındırılmış metin, değilse sadece bayraklar. */
+  async readUrlInspected(raw: unknown): Promise<ToolResult> {
+    const page = await this.fetchPage(raw);
+    if ("rejected" in page) return page.rejected;
+    const c = inspectUntrusted(page.body, { isHtml: page.isHtml });
+    this.markUntrusted("read_url", true);
+    this.auditInspection("read_url", { url: page.url.href }, [c]);
+    return { url: page.url.href, ...this.view(c) };
+  }
+
+  /** OKX haberleri: her öğe ayrı taranır; bayraklı öğe başlığıyla birlikte gizlenir. */
+  async newsInspected(coins?: string[]): Promise<ToolResult> {
+    const list = coins?.length ? coins : Object.values(this.d.policy.pairs).map((p) => p.spot.split("-")[0]!);
+    const articles = await this.d.atk.news(list, 10);
+    const checked = articles.map((a) => inspectUntrusted([a.title, a.summary ?? a.content].filter(Boolean).join("\n")));
+    this.markUntrusted("get_news_digest", checked.some((c) => c.flags.length > 0));
+    this.auditInspection("news", { coins: list }, checked);
+    return {
+      source: "okx_news",
+      count: articles.length,
+      items: checked.map((c, i) => ({ ...(c.delivered ? { title: articles[i]!.title ?? "" } : {}), ...this.view(c) })),
+    };
+  }
+
+  /**
+   * Kullanıcının ajana gönderdiği mesaj (host entegrasyonu çağırır). Kullanıcı güvenilir, yapıştırdığı içerik değil:
+   * kodlanmış içerik engellenir; talimat/gizli metin varsa sıkı taint başlar (sonraki işlem onaya düşer).
+   */
+  inspectPrompt(text: string): ToolResult {
+    const r = sanitizeChatInput(String(text).slice(0, 50_000));
+    if (r.flags.length) this.markUntrusted("user_prompt", true);
+    this.d.audit.append({
+      source: "llm",
+      tool: "inspect_prompt",
+      input: { length: String(text).length },
+      outcome: r.blocked ? "REJECTED" : r.flags.length ? "WARNING" : "OK",
+      code: r.blocked ? "CHAT_INPUT_BLOCKED" : r.flags.length ? r.flags.join(",") : undefined,
+      detail: { decoded: r.decoded },
+    });
+    return r.blocked ? { delivered: false, flags: r.flags, reason: "CHAT_INPUT_BLOCKED" } : { delivered: true, text: r.text, flags: r.flags };
+  }
+
+  private view(c: InspectedContent): ToolResult {
+    return c.delivered ? { delivered: true, text: c.text, flags: c.flags } : { delivered: false, flags: c.flags, reason: "CONTENT_BLOCKED" };
+  }
+
+  private auditInspection(tool: string, input: unknown, items: InspectedContent[]): void {
+    const flags = [...new Set(items.flatMap((c) => c.flags))];
+    const blocked = items.filter((c) => !c.delivered).length;
+    this.d.audit.append({
+      source: "llm",
+      tool,
+      input,
+      outcome: flags.length ? "WARNING" : "OK",
+      code: flags.length ? flags.join(",") : undefined,
+      detail: { items: items.length, blocked, decoded: items.flatMap((c) => c.decoded) },
+    });
   }
 
   /** İşlem önerisi: şema → maske → bağlam → kurallar → (onay) → yürütme. */
@@ -247,24 +339,34 @@ export class Guardian extends EventEmitter {
     if (leaks.length) return this.reject("propose_trade", raw, "MASKING_VIOLATION", leaks);
     const parsed = TradeIntentSchema.safeParse(raw);
     if (!parsed.success) return this.reject("propose_trade", raw, "SCHEMA_INVALID", parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`));
-    const intent = parsed.data;
-    if (!this.d.policy.pairs[intent.pair]) return this.reject("propose_trade", intent, "INSTRUMENT_NOT_ALLOWED", intent.pair);
+    return this.proposeIntent(parsed.data);
+  }
+
+  /**
+   * Ortak karar hattı: kurallar → (onay) → yürütme. `propose_trade` ve ATK uyumlu kapı (src/compat, docs/compat.md) buradan geçer.
+   * `intent` şemadan geçmiş olmalıdır; `tool`/`auditInput` audit satırında ajanın gerçekte çağırdığı tool'u gösterir.
+   */
+  async proposeIntent(intent: TradeIntent, tool = "propose_trade", auditInput: unknown = intent): Promise<ToolResult> {
+    if (!this.d.policy.pairs[intent.pair]) return this.reject(tool, auditInput, "INSTRUMENT_NOT_ALLOWED", intent.pair);
 
     const ctx = await this.buildContext(intent);
     const verdict = evaluate(ctx, this.d.policy);
-    if (!verdict.allowed) return this.reject("propose_trade", intent, verdict.code!, verdict.results);
+    if (!verdict.allowed) return this.reject(tool, auditInput, verdict.code!, verdict.results);
 
     if (verdict.needsHumanApproval) {
       const summary = this.summarize(ctx, verdict);
       const approval = this.d.approvals.create(intent, summary);
-      this.d.audit.append({ source: "llm", tool: "propose_trade", input: intent, outcome: "PENDING_APPROVAL", code: approval.id, detail: verdict.results });
+      this.d.audit.append({ source: "llm", tool, input: auditInput, outcome: "PENDING_APPROVAL", code: approval.id, detail: verdict.results });
       return {
         status: "PENDING_APPROVAL",
         approval_id: approval.id,
-        message: "İşlem kullanıcı onayı bekliyor. Onay yalnızca kullanıcı arayüzünden verilebilir.",
+        reasons: verdict.approvalReasons,
+        message: verdict.approvalReasons.includes("UNTRUSTED_CONTENT")
+          ? "Bağlamda güvenilmeyen içerik (web/haber) olduğu için işlem kullanıcı onayı bekliyor. Onay yalnızca kullanıcı arayüzünden verilebilir."
+          : "İşlem kullanıcı onayı bekliyor. Onay yalnızca kullanıcı arayüzünden verilebilir.",
       };
     }
-    return this.execute(ctx, verdict, "llm");
+    return this.execute(ctx, verdict, "llm", undefined, tool, auditInput);
   }
 
   /** Arayüzden gelen insan onayı: kurallar taze bağlamla yeniden çalışır. */
@@ -339,10 +441,51 @@ export class Guardian extends EventEmitter {
 
   // ───────────────────────── iç işleyiş ─────────────────────────
 
+  /**
+   * Güvenilmeyen içerik LLM bağlamına girdi: taint penceresi başlar (yeniden başlatmaya dayanıklı).
+   * Web sayfası veya bayraklı haber ayrıca "sıkı" taint yazar; sonradan gelen temiz haber onu silemez.
+   */
+  private markUntrusted(source: "read_url" | "get_news_digest" | "user_prompt", flagged: boolean): void {
+    const ts = Date.now();
+    this.d.store.setKv("untrusted:last", JSON.stringify({ ts, source, flagged }));
+    if (flagged) this.d.store.setKv("untrusted:strict", JSON.stringify({ ts, source }));
+  }
+
+  private untrustedState(now: number): TradeContext["untrusted"] {
+    const window = this.d.policy.untrusted.taintSeconds;
+    const age = (ts: number) => Math.max(0, Math.round((now - ts) / 1000));
+    try {
+      const strictRaw = this.d.store.getKv("untrusted:strict");
+      if (strictRaw) {
+        const { ts, source } = JSON.parse(strictRaw) as { ts: number; source: string };
+        if (age(ts) < window) return { tainted: true, source, ageSeconds: age(ts), flagged: true };
+      }
+      const raw = this.d.store.getKv("untrusted:last");
+      if (!raw) return { tainted: false };
+      const { ts, source, flagged } = JSON.parse(raw) as { ts: number; source: string; flagged?: boolean };
+      return { tainted: age(ts) < window, source, ageSeconds: age(ts), flagged };
+    } catch {
+      return { tainted: true, source: "unknown" }; // bozuk kayıt: fail-closed
+    }
+  }
+
+  private async signalFor(intent: TradeIntent): Promise<TradeContext["signal"]> {
+    const spot = this.d.policy.pairs[intent.pair]?.spot;
+    if (!spot) return undefined;
+    try {
+      const closes = (await this.d.atk.closes(spot, "15m", 100)).map((c) => c.close);
+      return { ema20: ema(closes, 20), ema50: ema(closes, 50), rsi14: rsi(closes, 14) };
+    } catch {
+      return undefined; // kural SIGNAL_NOT_CONFIRMED ile reddeder
+    }
+  }
+
   private async buildContext(intent: TradeIntent): Promise<TradeContext> {
     const instId = this.d.vault.resolvePair(intent.pair, intent.market);
     const chain = await this.chainState();
     const now = Date.now();
+    const untrusted = this.untrustedState(now);
+    const signal = untrusted.tainted && this.d.policy.untrusted.requireSignal ? await this.signalFor(intent) : undefined;
     let refPrice: number | undefined;
     let notional = 0;
     let total = 0;
@@ -379,6 +522,8 @@ export class Guardian extends EventEmitter {
       ordersLastMinute: this.d.store.ordersSince(now - 60_000),
       dailyPnlPct,
       chain,
+      untrusted,
+      signal,
     };
   }
 
@@ -392,11 +537,19 @@ export class Guardian extends EventEmitter {
       slPct: ctx.intent.sl_pct,
       tpPct: ctx.intent.tp_pct,
       rules: v.results.map((r) => ({ rule: r.rule, ok: r.ok, detail: r.detail })),
+      reasons: v.approvalReasons,
     };
   }
 
   /** Emir parametrelerini LLM değil bu fonksiyon üretir. */
-  private async execute(ctx: TradeContext, v: Verdict, source: "llm" | "human", approvalId?: string): Promise<ToolResult> {
+  private async execute(
+    ctx: TradeContext,
+    v: Verdict,
+    source: "llm" | "human",
+    approvalId?: string,
+    tool = "propose_trade",
+    auditInput: unknown = ctx.intent,
+  ): Promise<ToolResult> {
     const { intent } = ctx;
     const instId = ctx.instId!;
     const ref = ctx.refPrice!;
@@ -410,14 +563,13 @@ export class Guardian extends EventEmitter {
       if (intent.market === "spot") {
         params.tdMode = "cash";
         const sz = round(ctx.notionalUsdt / px, inst.lotSz);
-        if (!(sz >= inst.minSz)) return this.reject("propose_trade", intent, "SIZE_BELOW_MIN", { sz, minSz: inst.minSz }, source);
+        if (!(sz >= inst.minSz)) return this.reject(tool, auditInput, "SIZE_BELOW_MIN", { sz, minSz: inst.minSz }, source);
         params.sz = String(sz);
       } else {
         params.tdMode = "isolated";
         const contracts = round(ctx.notionalUsdt / (px * inst.ctVal), inst.lotSz);
-        if (!(contracts >= inst.minSz)) return this.reject("propose_trade", intent, "SIZE_BELOW_MIN", { contracts, minSz: inst.minSz }, source);
+        if (!(contracts >= inst.minSz)) return this.reject(tool, auditInput, "SIZE_BELOW_MIN", { contracts, minSz: inst.minSz }, source);
         params.sz = String(contracts);
-        await this.d.atk.setLeverage(instId, intent.leverage, "isolated");
       }
       if (intent.sl_pct !== undefined) {
         const sl = buy ? ref * (1 - intent.sl_pct / 100) : ref * (1 + intent.sl_pct / 100);
@@ -429,22 +581,54 @@ export class Guardian extends EventEmitter {
         params.tpTriggerPx = roundPx(tp, inst.tickSz);
         params.tpOrdPx = "-1";
       }
+      const commit = this.d.policy.intentCommit ? await this.commitIntent(intent.market, params) : undefined;
+      if (commit && "rejected" in commit) return this.reject(tool, auditInput, commit.rejected, commit.detail, source);
+      if (intent.market === "swap") await this.d.atk.setLeverage(instId, intent.leverage, "isolated");
       const ack = await this.d.atk.placeOrder(intent.market, params);
       // Hacim, dolum beklenmeden muhafazakâr biçimde kaydedilir.
       this.d.store.recordFill(Date.now(), instId, ctx.notionalUsdt);
       const ordToken = this.d.vault.tokenize("ORD", ack.ordId, { instId, market: intent.market });
       this.d.audit.append({
         source,
-        tool: approvalId ? "approve" : "propose_trade",
-        input: approvalId ? { approval_id: approvalId, ...intent } : intent,
+        tool: approvalId ? "approve" : tool,
+        input: approvalId ? { approval_id: approvalId, ...intent } : auditInput,
         outcome: "ALLOWED",
         code: ordToken,
-        detail: { rules: v.results, order: { ...params, ordId: undefined } },
+        detail: { rules: v.results, order: { ...params, ordId: undefined }, intentCommit: commit },
       });
       void this.snapshot(true).catch(() => undefined);
-      return { status: "ALLOWED", ord_id: ordToken, message: "Emir OKX'e iletildi (IOC, fiyat bantlı)." };
+      return {
+        status: "ALLOWED",
+        ord_id: ordToken,
+        ...(commit ? { onchain_intent: { tx: commit.txHash, finality_ms: commit.ms } } : {}),
+        message: commit
+          ? `Niyet Avalanche'ta ${commit.ms} ms'de kesinleşti, emir OKX'e iletildi (IOC, fiyat bantlı).`
+          : "Emir OKX'e iletildi (IOC, fiyat bantlı).",
+      };
     } catch (e) {
-      return this.reject("propose_trade", intent, e instanceof AtkError ? e.code : "ATK_ERROR", (e as Error).message, source);
+      return this.reject(tool, auditInput, e instanceof AtkError ? e.code : "ATK_ERROR", (e as Error).message, source);
+    }
+  }
+
+  /**
+   * Niyet hash'i = guardian'ın ürettiği emir parametreleri + policy sürümü + nonce. Avalanche'ta kesinleşmeden emir gitmez;
+   * OKX emrinin clOrdId'si hash'ten türetilir, böylece borsa emri ile zincir kaydı birbirine bağlanır.
+   */
+  private async commitIntent(
+    market: "spot" | "swap",
+    params: Record<string, unknown>,
+  ): Promise<{ intentHash: Hex; txHash: Hex; ms: number; preimage: string } | { rejected: string; detail: string }> {
+    const preimage = JSON.stringify({ v: 1, market, ...params, policyVersion: this.d.policy.version, nonce: randomBytes(8).toString("hex") });
+    const intentHash = keccak256(toBytes(preimage));
+    try {
+      const { txHash, ms } = await this.d.chain.commitIntent(intentHash);
+      params.clOrdId = `g${intentHash.slice(2, 33)}`;
+      this.d.store.recordIntent(Date.now(), intentHash, txHash, ms);
+      this.emit("intent", { intentHash, txHash, ms });
+      return { intentHash, txHash, ms, preimage };
+    } catch (e) {
+      const code = e instanceof IntentCommitError ? e.code : "INTENT_COMMIT_FAILED";
+      return { rejected: code, detail: (e as Error).message };
     }
   }
 

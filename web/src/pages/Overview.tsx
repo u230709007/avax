@@ -6,7 +6,7 @@ import { Card, Empty, Metric, Mono } from "../components/ui";
 import { fmtDateTime, fmtUsd } from "../format";
 import type { State } from "../store";
 
-export function Overview({ state, goDecisions }: { state: State; goDecisions: () => void }) {
+export function Overview({ state, goDecisions, demoBills }: { state: State; goDecisions: () => void; demoBills?: { ts: number; bal: number }[] }) {
   const p = state.portfolio;
   const s = p?.snapshot;
   const lastAnchor = state.anchors.find((a) => a.txHash);
@@ -14,8 +14,9 @@ export function Overview({ state, goDecisions }: { state: State; goDecisions: ()
   const [billsErr, setBillsErr] = useState<string>();
 
   useEffect(() => {
+    if (demoBills) { setBills(demoBills); return; }
     api<{ ts: number; bal: number }[]>("/api/bills?ccy=USDT").then(setBills).catch((e: Error) => setBillsErr(e.message));
-  }, [s?.ts]);
+  }, [s?.ts, demoBills]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,7 +26,7 @@ export function Overview({ state, goDecisions }: { state: State; goDecisions: ()
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Toplam değer" value={s ? `${fmtUsd(s.totalEqUsd)} $` : "—"} hint="OKX demo hesabı, canlı" />
+        <Metric label="Toplam değer" value={s ? `${fmtUsd(s.totalEqUsd)} $` : "—"} hint={demoBills ? "Ziyaretçi demosu · örnek veri" : "OKX demo hesabı, canlı"} />
         <Metric
           label="Bugün PnL"
           value={s ? <span className={s.dailyPnlPct >= 0 ? "text-[var(--ok-fg)]" : "text-[var(--bad-fg)]"}>{`${s.dailyPnlPct >= 0 ? "+" : ""}${fmtUsd(s.dailyPnlPct)}%`}</span> : "—"}
@@ -39,7 +40,7 @@ export function Overview({ state, goDecisions }: { state: State; goDecisions: ()
         <Metric label="Son anchor" value={lastAnchor ? `#${lastAnchor.toSeq}` : "—"} hint={lastAnchor ? fmtDateTime(lastAnchor.ts) : "Henüz zincire yazılmadı"} />
       </div>
 
-      <Card title="USDT bakiye geçmişi" action={<span className="text-xs text-muted">Kaynak: OKX account bills</span>}>
+      <Card title="USDT bakiye geçmişi" action={<span className="text-xs text-muted">{demoBills ? "Örnek bakiye geçmişi" : "Kaynak: OKX account bills"}</span>}>
         <div className="h-56 px-2 py-3">
           {bills && bills.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -91,7 +92,7 @@ export function Overview({ state, goDecisions }: { state: State; goDecisions: ()
           )}
         </Card>
         <Card title="Son kararlar" className="xl:col-span-2" action={<button className="text-xs text-accent" onClick={goDecisions}>Tümünü gör</button>}>
-          <DecisionsTable rows={state.decisions.slice(0, 8)} anchors={state.anchors} explorer={state.status?.chain.explorer} filter={(r) => r.tool !== "startup"} />
+          <DecisionsTable readOnly={Boolean(demoBills)} rows={state.decisions.slice(0, 8)} anchors={state.anchors} explorer={state.status?.chain.explorer} filter={(r) => r.tool !== "startup"} />
         </Card>
       </div>
     </div>
@@ -106,3 +107,4 @@ function LimitBar({ used, max }: { used: number; max: number }) {
     </span>
   );
 }
+

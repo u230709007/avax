@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { makeGuardian } from "./helpers.js";
-import { MALICIOUS_INTENTS } from "../fixtures/attacks.js";
+import { MALICIOUS_INTENTS, MORSE_LONG_125X } from "../fixtures/attacks.js";
 import { BALANCE } from "../fixtures/okx.js";
 import { detokenize } from "../../src/chat/detokenize.js";
+import { neutralizeFlagged } from "../../src/guardian.js";
+import { IntentCommitError } from "../../src/chain/avalanche.js";
 
 /** LLM'e giden JSON içinde gerçek bakiye/ID değerlerinden herhangi biri var mı? */
 function containsRealValues(payload: unknown): string[] {
@@ -119,5 +121,129 @@ describe("Guardian — kural kontrolü (giden yön)", () => {
   it("read_url allowlist dışı hostu reddeder", async () => {
     const { guardian } = makeGuardian();
     expect((await guardian.readUrl({ url: "https://evil.example/page" })).code).toBe("HOST_NOT_ALLOWED");
+  });
+});
+
+describe("Guardian — taint (güvenilmeyen içerik sonrası işlem)", () => {
+  const cleanPage = (async () => new Response("<p>AVAX news</p>", { headers: { "content-type": "text/html" } })) as typeof fetch;
+
+  // Hafif dalgalı yükseliş: EMA20 > EMA50, RSI aşırı alımın altında.
+  const uptrend = Array.from({ length: 100 }, (_, i) => 18 + i * 0.01 + (i % 2 ? 0.05 : -0.05));
+
+  it("read_url sonrası küçük işlem bile onaya düşer, ATK'ya emir gitmez", async () => {
+    const { guardian, placed } = makeGuardian({ fetchImpl: cleanPage, closes: uptrend });
+    await guardian.readUrl({ url: "http://localhost/news" });
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.status).toBe("PENDING_APPROVAL");
+    expect(r.reasons).toEqual(["UNTRUSTED_CONTENT"]);
+    expect(placed).toHaveLength(0);
+  });
+
+  it("read_url sonrası piyasa verisine ters yön reddedilir (asimetrik etki)", async () => {
+    const { guardian, placed } = makeGuardian({ fetchImpl: cleanPage, closes: uptrend });
+    await guardian.readUrl({ url: "http://localhost/news" });
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "sell", size_pct: 1 });
+    expect(r.code).toBe("SIGNAL_NOT_CONFIRMED");
+    expect(placed).toHaveLength(0);
+  });
+
+  it("read_url sonrası gösterge alınamazsa fail-closed", async () => {
+    const { guardian } = makeGuardian({ fetchImpl: cleanPage });
+    await guardian.readUrl({ url: "http://localhost/news" });
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.code).toBe("SIGNAL_NOT_CONFIRMED");
+  });
+
+  it("taint penceresi dolunca normal akışa döner", async () => {
+    const { guardian, store, placed } = makeGuardian({ fetchImpl: cleanPage });
+    await guardian.readUrl({ url: "http://localhost/news" });
+    store.setKv("untrusted:last", JSON.stringify({ ts: Date.now() - 3_600_000, source: "read_url", flagged: true }));
+    store.setKv("untrusted:strict", JSON.stringify({ ts: Date.now() - 3_600_000, source: "read_url" }));
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.status).toBe("ALLOWED");
+    expect(placed).toHaveLength(1);
+  });
+
+  const cleanNews = [{ title: "AVAX ağı güncellemesi", summary: "Avalanche yeni sürüm yayınladı." }];
+
+  it("temiz OKX haberi sonrası: onay yok ama yön piyasa verisiyle doğrulanır (otonom tur)", async () => {
+    const { guardian, placed } = makeGuardian({ news: cleanNews, closes: uptrend });
+    await guardian.getNewsDigest();
+    const buy = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(buy.status).toBe("ALLOWED");
+    expect(placed).toHaveLength(1);
+    const sell = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "sell", size_pct: 1 });
+    expect(sell.code).toBe("SIGNAL_NOT_CONFIRMED");
+  });
+
+  it("bayraklı haber (karantina talimat buldu) sonrası işlem onaya düşer", async () => {
+    const { guardian, placed } = makeGuardian({
+      news: cleanNews,
+      closes: uptrend,
+      quarantine: async () => [{ coin: "AVAX", sentiment: "positive", score: 0.9, flags: ["INSTRUCTION"] }],
+    });
+    await guardian.getNewsDigest();
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.status).toBe("PENDING_APPROVAL");
+    expect(placed).toHaveLength(0);
+  });
+
+  it("web sayfasından sonra gelen temiz haber onay gereksinimini silemez", async () => {
+    const { guardian, placed } = makeGuardian({ fetchImpl: cleanPage, news: cleanNews, closes: uptrend });
+    await guardian.readUrl({ url: "http://localhost/news" });
+    await guardian.getNewsDigest();
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.status).toBe("PENDING_APPROVAL");
+    expect(placed).toHaveLength(0);
+  });
+});
+
+describe("Guardian — Avalanche IntentGate (emir öncesi zincir kaydı)", () => {
+  it("emir, niyet hash'i zincirde kesinleştikten sonra gider; clOrdId hash'e bağlı", async () => {
+    const { guardian, placed, commits, store } = makeGuardian();
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.status).toBe("ALLOWED");
+    expect(commits).toHaveLength(1);
+    expect(placed[0]!.params.clOrdId).toBe(`g${commits[0]!.slice(2, 33)}`);
+    expect(r.onchain_intent).toMatchObject({ finality_ms: 1200 });
+    expect(store.recentIntents()).toHaveLength(1);
+  });
+
+  it("IntentGate kill-switch ile reddederse emir OKX'e gitmez", async () => {
+    const { guardian, placed } = makeGuardian({ commitError: new IntentCommitError("PAUSED_ONCHAIN", "durduruldu") });
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.code).toBe("PAUSED_ONCHAIN");
+    expect(placed).toHaveLength(0);
+  });
+
+  it("zincir yazılamazsa fail-closed", async () => {
+    const { guardian, placed } = makeGuardian({ commitError: new Error("rpc timeout") });
+    const r = await guardian.proposeTrade({ pair: "P_AVAX", market: "spot", side: "buy", size_pct: 1 });
+    expect(r.code).toBe("INTENT_COMMIT_FAILED");
+    expect(placed).toHaveLength(0);
+  });
+});
+
+describe("Guardian — içerik maskeleme (bayraklı öğe nötrlenir)", () => {
+  it("bayrağı olan öğenin duygusu nötr/0 olur, temiz öğe aynen kalır", () => {
+    const out = neutralizeFlagged([
+      { coin: "AVAX", sentiment: "positive", score: 0.99, flags: ["MORSE"] },
+      { coin: "BTC", sentiment: "negative", score: 0.7, flags: [] },
+    ]);
+    expect(out[0]).toMatchObject({ coin: "AVAX", sentiment: "neutral", score: 0, flags: ["MORSE"] });
+    expect(out[1]).toMatchObject({ coin: "BTC", sentiment: "negative", score: 0.7 });
+  });
+
+  it("kandırılmış karantina modelinin sahte 'positive 0.99' çıktısı read_url'den geçmez", async () => {
+    const page = `<p>AVAX update</p><p>${MORSE_LONG_125X}</p>`;
+    const { guardian, audit } = makeGuardian({
+      fetchImpl: (async () => new Response(page, { headers: { "content-type": "text/html" } })) as typeof fetch,
+      quarantine: async (_t, flags) => [{ coin: "AVAX", sentiment: "positive", score: 0.99, flags }],
+    });
+    const r = await guardian.readUrl({ url: "http://localhost/attack" });
+    expect(r.items).toEqual([expect.objectContaining({ sentiment: "neutral", score: 0 })]);
+    const row = audit.recent(1, 0)[0]!;
+    expect(row.outcome).toBe("WARNING");
+    expect(JSON.stringify(row.detail)).toContain("0.99");
   });
 });

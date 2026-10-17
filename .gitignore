@@ -7,3 +7,15 @@ web/dist/
 *.log
 contracts/cache/
 contracts/artifacts/
+
+web/.env.local
+web/.env.*.local
+
+# Üretim çıktıları ve medya (repoya girmez)
+.voiceover-build/
+.presentation-build/
+*.mp4
+*.m4a
+*.wav
+# Yerel API anahtarı içerir
+.codex/config.toml

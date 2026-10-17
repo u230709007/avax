@@ -1,0 +1,69 @@
+Guardian — ekranla eşleştirilmiş kadın seslendirme
+Ses: Microsoft Emel Neural (Türkçe kadın, sentetik ses).
+Anlatım hızlandırılmadı. Uzun cümlelerde ekran kısa süre sabitlendi.
+
+00:00:00,500 – 00:00:08,036 | Açılış
+Guardian'ı kısaca göstereyim. Ajan düşünüyor, işlem sınırlarını Guardian kontrol ediyor.
+
+00:00:08,700 – 00:00:24,828 | Dört özellik kartı
+Burada dört temel özellik var. Hesap verileri maskeleniyor. İşlem istekleri kurallardan geçiyor. Gerektiğinde kullanıcı onayı isteniyor. Kararların kaydı da sonradan incelenebiliyor.
+
+00:00:25,900 – 00:00:37,804 | Doğrudan bağlantı şeması
+Üstte, ajanın işlem aracına doğrudan bağlandığı akışı görüyoruz. Alttaki akışta ise araya Guardian giriyor. İstek önce burada denetleniyor.
+
+00:00:38,767 – 00:00:50,215 | Guardian karşılaştırması
+Yani ajan bir emir önerdiğinde hemen işleme dönüşmüyor. Kurala aykırıysa reddediliyor. Onay gerekiyorsa da kullanıcının kararı bekleniyor.
+
+00:00:51,267 – 00:00:57,795 | Üç rol
+Roller de ayrı: ajan öneriyor, Guardian denetliyor, işlem aracı emri yürütüyor.
+
+00:00:58,767 – 00:01:15,255 | Beş aşamalı akış
+Burada aynı süreci adım adım izliyoruz. Önce istek, sonra kontrol. Gerekiyorsa onay alınıyor. İşlemden sonra da kararın kaydı kalıyor. Ajan kendi isteğini onaylayamıyor.
+
+00:01:16,333 – 00:01:26,581 | Mors ve gizli içerik testi
+Şimdi kayıtlı güvenlik testlerine bakalım. Mors içeren sayfa ve gizli metinli sayfa için tespit edilen uyarılar sağ tarafta gösteriliyor.
+
+00:01:27,533 – 00:01:37,853 | Adres ve transfer alanı reddi
+Ham adres ve transfer alanı denemelerinde ise politika reddi görüyoruz. Burada her senaryonun sonucu ayrı ayrı incelenebiliyor.
+
+00:01:39,333 – 00:01:50,781 | Bağlantı seçenekleri
+Kendi ajanımızı bağlamak için bu bağlantıyı kullanabiliyoruz. Kontrol paneline de buradan geçiyoruz. Şimdi panelin içini göstereyim.
+
+00:01:52,233 – 00:01:59,793 | MCP bağlantı ekranı
+Bu sayfada bağlantı adresleri ve istemci ayarları var. Önce genel bakışa geçiyorum.
+
+00:02:01,267 – 00:02:13,387 | Genel bakış üst alan
+Üstte demo hesabının toplam değerini, günlük kâr ve zararı görüyoruz. Yanındaki alan, son yirmi dört saatte işlem limitinin ne kadarının kullanıldığını gösteriyor.
+
+00:02:14,867 – 00:02:27,251 | Canlı akış ve grafik
+Canlı akış açıkken değerler yenileniyor. Alttaki grafik de spot bakiyenin değişimini gösteriyor. Biraz aşağıda hesap varlıkları ve son kararlar yer alıyor.
+
+00:02:31,733 – 00:02:38,861 | Sohbete geçiş
+Şimdi sohbete geçip ajana bakiyeyi soruyorum. Gelen yanıtın ayrıntısını da açacağım.
+
+00:02:40,333 – 00:02:52,837 | Bakiye ve maskeli mesaj
+Solda kullanıcıya gösterilen rakamlar var. Sağda ise modelin gördüğü mesaj. Dikkat ederseniz, gerçek değerlerin yerinde maskeli etiketler bulunuyor.
+
+00:02:53,800 – 00:03:04,672 | Alım isteği ve ret
+Şimdi yüzde birlik bir alım istiyorum. Ama işlem reddediliyor. Ekrandaki gerekçe, alım yönünün piyasa sinyaliyle doğrulanmaması.
+
+00:03:05,633 – 00:03:13,289 | Mors sayfası yanıtı
+Ardından Mors içeren test sayfasını okutuyorum. Yanıtta Mors ve talimat uyarıları görünüyor.
+
+00:03:13,967 – 00:03:22,391 | Gizli metin yanıtı
+Gizli metinli sayfada da talimat ve adres uyarıları geliyor. Bunlar işlem talimatı olarak uygulanmıyor.
+
+00:03:23,367 – 00:03:33,975 | Kararlar tablosu
+Kararlar ekranında bu adımların kayıtlarını görüyoruz. Okuma, uyarı ve ret sonuçları burada ayrı satırlarda, gerekçeleriyle birlikte tutuluyor.
+
+00:03:34,933 – 00:03:44,701 | MCP anahtar formu
+Şimdi başka bir ajanı bağlamak için bağlantı sayfasına dönüyorum. Ajan adını ve planı seçip bir erişim anahtarı oluşturabiliyoruz.
+
+00:03:45,667 – 00:03:56,635 | Anahtar oluşturma
+Oluşturulan anahtar burada görünüyor. Yan taraftaki ayarı istemciye ekliyoruz. Bağlı ajanlar da aşağıdaki listede yer alıyor.
+
+00:03:58,100 – 00:04:10,316 | Güvenlik testlerine dönüş
+Son olarak güvenlik testlerine dönüyorum. Politika reddiyle içerik uyarısını burada ayırabiliyoruz. Belirsiz sonuçlar da başarılı bir test gibi gösterilmiyor.
+
+00:04:11,767 – 00:04:21,175 | Genel bakış kapanış
+Genel akış böyle. Ajan önerisini yapıyor, biz de hangi kararın neden verildiğini panelden takip edebiliyoruz.

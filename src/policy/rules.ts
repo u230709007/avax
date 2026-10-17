@@ -19,7 +19,8 @@ export type RejectCode =
   | "CHAIN_UNREACHABLE"
   | "POLICY_HASH_MISMATCH"
   | "PAUSED_ONCHAIN"
-  | "STATE_UNAVAILABLE";
+  | "STATE_UNAVAILABLE"
+  | "SIGNAL_NOT_CONFIRMED";
 
 export interface ChainState {
   reachable: boolean;
@@ -39,6 +40,10 @@ export interface TradeContext {
   ordersLastMinute: number;
   dailyPnlPct: number | undefined;
   chain: ChainState;
+  /** Taint: pencere içinde güvenilmeyen içerik (read_url / get_news_digest) LLM bağlamına girdi mi? */
+  untrusted: { tainted: boolean; source?: string; ageSeconds?: number; flagged?: boolean };
+  /** 15m kapanışlardan teknik gösterge; sadece taint varken alınır. */
+  signal?: { ema20?: number; ema50?: number; rsi14?: number };
 }
 
 export interface RuleResult {
@@ -120,4 +125,17 @@ export const RULES: readonly Rule[] = Object.freeze([
       : ctx.dailyPnlPct > -p.dailyLossLimitPct
         ? pass("dailyLoss", `%${ctx.dailyPnlPct.toFixed(2)}`)
         : fail("dailyLoss", "DAILY_LOSS_LIMIT", `günlük PnL %${ctx.dailyPnlPct.toFixed(2)} ≤ -%${p.dailyLossLimitPct}`),
+  // Asimetrik etki: güvenilmeyen içerik işlem yönünü tek başına belirleyemez, yönü piyasa verisi doğrulamalı.
+  (ctx, p) => {
+    if (!ctx.untrusted.tainted || !p.untrusted.requireSignal) return pass("signal", "güvenilmeyen içerik yok");
+    const s = ctx.signal;
+    if (s?.ema20 === undefined || s.ema50 === undefined || s.rsi14 === undefined)
+      return fail("signal", "SIGNAL_NOT_CONFIRMED", "Teknik gösterge alınamadı (fail-closed)");
+    const buy = ctx.intent.side === "buy";
+    const ok = buy
+      ? s.ema20 > s.ema50 && s.rsi14 < p.untrusted.rsiOverbought
+      : s.ema20 < s.ema50 && s.rsi14 > p.untrusted.rsiOversold;
+    const d = `EMA20 ${s.ema20 > s.ema50 ? ">" : "≤"} EMA50, RSI ${s.rsi14.toFixed(1)}`;
+    return ok ? pass("signal", d) : fail("signal", "SIGNAL_NOT_CONFIRMED", `${buy ? "alım" : "satım"} piyasa verisiyle doğrulanmadı: ${d}`);
+  },
 ]);

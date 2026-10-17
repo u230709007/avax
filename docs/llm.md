@@ -36,6 +36,8 @@ Gemini ve Groq 429/5xx için üstel bekleme ile 3 deneme (`withRetry`). Ücretsi
 
 ## Kurallar / sınırlar
 - Güvenlik prompt'a dayanmaz; prompt sadece kullanılabilirlik içindir (etiket yazma, Türkçe, emoji yok).
+- SYSTEM_PROMPT URL verildiğinde `read_url` çağırmayı açıkça söyler (localhost dahil; izin kararını guardian verir). Yoksa gpt-oss
+  "localhost'a erişemem" deyip tool'u hiç çağırmıyordu (audit'te `read_url` yok). Bkz. LEARN L-018.
 - `strict: true` kullanılmıyor: guardian tüm girdiyi zaten doğruluyor ve saldırı girdilerinin audit'e düşmesi isteniyor (ADR 005).
 - Tahmini maliyet: `response.usage` ile ölçülmeli; otonom mod 5 dk aralıkla.
 
@@ -43,4 +45,4 @@ Gemini ve Groq 429/5xx için üstel bekleme ile 3 deneme (`withRetry`). Ücretsi
 `npm run test:integration` → Haiku şema testi, Opus bakiye sorusunda `{{BAL:` etiketi ve trafikte gerçek bakiye olmaması.
 
 ## Son güncelleme
-2026-10-17 · Groq varsayılan; arayüzden Gemini/Claude seçimi (SwitchingHost). Groq Llama modelleri kalktı → gpt-oss (LEARN L-013). Canlı doğrulandı.
+2026-10-17 · SYSTEM_PROMPT: URL → `read_url` (Groq localhost sayfalarını tool çağırmadan reddediyordu; canlı doğrulandı). Öncesi: Groq varsayılan; arayüzden Gemini/Claude seçimi (SwitchingHost). Groq Llama modelleri kalktı → gpt-oss (LEARN L-013). Canlı doğrulandı.

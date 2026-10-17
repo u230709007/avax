@@ -1,17 +1,19 @@
 import { useState, type ReactNode } from "react";
-import { Activity, Cpu, FileCheck2, LayoutDashboard, MessageSquare, OctagonX, Play, Plug, Power, Radio, Settings, ShieldCheck, X } from "lucide-react";
+import { Activity, Cable, FileCheck2, LayoutDashboard, LogOut, MessageSquare, OctagonX, Play, Plug, Power, Radio, Settings, ShieldCheck, X } from "lucide-react";
 import type { State } from "../store";
 import { api } from "../api";
 import { setPaused } from "../killSwitch";
 import { DOT, Tip } from "./ui";
 
-export type Page = "overview" | "chat" | "decisions" | "audit" | "settings";
+export type Page = "overview" | "chat" | "decisions" | "audit" | "connect" | "security" | "settings";
 
 const NAV: { id: Page; label: string; icon: typeof Activity }[] = [
   { id: "overview", label: "Genel bakış", icon: LayoutDashboard },
   { id: "chat", label: "Sohbet", icon: MessageSquare },
   { id: "decisions", label: "Kararlar", icon: Activity },
   { id: "audit", label: "Audit", icon: FileCheck2 },
+  { id: "connect", label: "MCP", icon: Cable },
+  { id: "security", label: "Testler", icon: ShieldCheck },
   { id: "settings", label: "Ayarlar", icon: Settings },
 ];
 
@@ -20,19 +22,23 @@ const HEAD: Record<Page, { title: string; sub: string }> = {
   chat: { title: "Sohbet", sub: "Ajanla konuşun. Bir mesaja tıklayınca LLM'e giden maskeli içerik sağda görünür." },
   decisions: { title: "Kararlar", sub: "Guardian'ın verdiği her karar; kuralları, karantina özeti ve hash'iyle." },
   audit: { title: "Audit", sub: "Karar kayıtlarının Merkle kökleri Avalanche Fuji'deki AuditAnchor kontratında." },
+  connect: { title: "MCP bağlantısı", sub: "Kendi ajanınızı (Claude Code, kendi botunuz, OKX.AI) guardian'a bağlayın: anahtar oluşturun, komutu kopyalayın, kullanımı izleyin." },
+  security: { title: "Güvenlik Testleri", sub: "Kayıtlı saldırı koşuları, guardian kararları ve kanıt sınırları." },
   settings: { title: "Ayarlar", sub: "Otonom mod, zincir ve ATK durumu, salt okunur politika." },
 };
 
 type Tone = keyof typeof DOT;
 
-export function Shell({ state, page, setPage, children }: { state: State; page: Page; setPage: (p: Page) => void; children: ReactNode }) {
-  const nav = NAV;
+export function Shell({ state, page, setPage, children, demo = false, onLogout }: { demo?: boolean; state: State; page: Page; setPage: (p: Page) => void; children: ReactNode; onLogout?: () => void }) {
+  // Kişisel hesap: MCP anahtarları ve zincir kill-switch'i sahibe aittir (docs/tenants.md).
+  const account = state.status?.role === "account";
+  const nav = account ? NAV.filter((n) => n.id !== "connect") : NAV;
   const chain = state.status?.chain;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
 
   const toggle = async () => {
-    if (!chain?.policyRegistry) return;
+    if (demo || !chain?.policyRegistry) return;
     setBusy(true);
     setErr(undefined);
     try {
@@ -83,22 +89,28 @@ export function Shell({ state, page, setPage, children }: { state: State; page: 
             <span className="hidden sm:inline">Sealed Intent </span>
             <span className="text-accent">Guardian</span>
           </span>
-          {state.status?.chatEnabled && <ModelPicker state={state} onError={setErr} />}
-          <StatusIcon icon={Plug} tone={okx[0]} label={`OKX demo · ${okx[1]}`} />
-          <StatusIcon icon={ShieldCheck} tone={policy[0]} label={`Fuji policy · ${policy[1]}`} />
-          <StatusIcon icon={Power} tone={chain?.paused ? "bad" : "ok"} label={`Durum · ${chain?.paused ? "Durduruldu" : "Aktif"}`} />
+          <StatusIcon icon={Plug} tone={okx[0]} label={demo ? "Örnek veri · OKX bağlantısı yok" : `OKX demo · ${okx[1]}`} />
+          <StatusIcon icon={ShieldCheck} tone={policy[0]} label={demo ? "Örnek veri · Zincir bağlantısı yok" : `Fuji policy · ${policy[1]}`} />
+          <StatusIcon icon={Power} tone={demo ? "idle" : chain?.paused ? "bad" : "ok"} label={demo ? "Salt okunur ziyaretçi demosu" : `Durum · ${chain?.paused ? "Durduruldu" : "Aktif"}`} />
           <StatusIcon icon={Radio} tone={state.wsOpen ? "ok" : "warn"} label={`Canlı akış · ${state.wsOpen ? "Açık" : "Kesik"}`} />
-          {chain?.policyRegistry && (
+          {!account && chain?.policyRegistry && (
             <Tip text={busy ? "Cüzdan bekleniyor" : chain.paused ? "Zincirden devam ettir" : "Zincirden durdur"}>
               <button
                 aria-label={chain.paused ? "Zincirden devam ettir" : "Zincirden durdur"}
                 onClick={toggle}
-                disabled={busy}
+                disabled={busy || demo}
                 className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors disabled:opacity-50 ${
                   chain.paused ? "border-line text-ink hover:border-faint" : "border-[var(--bad-fg)]/40 text-[var(--bad-fg)] hover:bg-[var(--bad-bg)]"
                 }`}
               >
                 {chain.paused ? <Play size={16} strokeWidth={1.75} /> : <OctagonX size={16} strokeWidth={1.75} />}
+              </button>
+            </Tip>
+          )}
+          {onLogout && (
+            <Tip text={state.status?.account?.email ? `${state.status.account.email} · Çıkış yap` : "Çıkış yap"}>
+              <button aria-label="Çıkış yap" onClick={onLogout} className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-faint hover:text-ink">
+                <LogOut size={16} strokeWidth={1.75} />
               </button>
             </Tip>
           )}
@@ -149,44 +161,6 @@ function Logo() {
   );
 }
 
-/** Sağ üst model seçici: Groq varsayılan; anahtarı olan Gemini/Claude seçilebilir. Kurallar hangisinde olursa olsun aynıdır. */
-function ModelPicker({ state, onError }: { state: State; onError: (m: string) => void }) {
-  const [busy, setBusy] = useState(false);
-  const llm = state.status?.llm ?? [];
-  const active = llm.find((p) => p.active)?.id ?? "";
-  const change = async (provider: string) => {
-    setBusy(true);
-    try {
-      await api("/api/settings/llm", { method: "POST", body: { provider } });
-    } catch (e) {
-      onError(`Model değiştirilemedi: ${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <Tip text={state.status?.agent ? `Ajan · ${state.status.agent}` : "Ajan modeli"}>
-      <span className="relative flex h-9 w-9 shrink-0 items-center rounded-lg border border-line text-muted hover:text-ink focus-within:border-accent-line sm:w-[112px]">
-        <Cpu size={16} strokeWidth={1.75} className="pointer-events-none absolute left-2.5" />
-        <select
-          aria-label="Ajan modeli"
-          value={active}
-          disabled={busy || state.agentBusy}
-          onChange={(e) => void change(e.target.value)}
-          className="h-full w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent pl-8 pr-2 font-mono text-[11px] uppercase tracking-[0.14em] text-transparent outline-none disabled:cursor-wait disabled:opacity-60 sm:text-ink"
-        >
-          {llm.map((p) => (
-            <option key={p.id} value={p.id} disabled={!p.available} className="bg-surface text-ink">
-              {p.label}
-              {p.available ? "" : " · anahtar yok"}
-            </option>
-          ))}
-        </select>
-      </span>
-    </Tip>
-  );
-}
-
 function StatusIcon({ icon: Icon, tone, label }: { icon: typeof Activity; tone: Tone; label: string }) {
   return (
     <Tip text={label}>
@@ -197,3 +171,4 @@ function StatusIcon({ icon: Icon, tone, label }: { icon: typeof Activity; tone: 
     </Tip>
   );
 }
+

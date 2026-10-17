@@ -15,6 +15,7 @@ function ctx(over: Partial<TradeContext> & { intent?: Record<string, unknown> } 
     ordersLastMinute: 0,
     dailyPnlPct: 0,
     chain: { reachable: true, policyHashMatches: true, paused: false },
+    untrusted: { tainted: false },
     ...over,
     intent,
   };
@@ -29,6 +30,30 @@ describe("Policy engine", () => {
 
   it("eşik üstü işlem insan onayı ister", () => {
     expect(evaluate(ctx({ notionalUsdt: 32 }), policy).needsHumanApproval).toBe(true);
+  });
+
+  it("güvenilmeyen içerik okunduysa küçük işlem de insan onayı ister (taint)", () => {
+    const v = evaluate(ctx({ untrusted: { tainted: true, source: "read_url" }, signal: { ema20: 20, ema50: 19, rsi14: 55 } }), policy);
+    expect(v.allowed).toBe(true);
+    expect(v.needsHumanApproval).toBe(true);
+    expect(v.approvalReasons).toEqual(["UNTRUSTED_CONTENT"]);
+  });
+
+  it("taint yokken teknik doğrulama aranmaz", () => {
+    const v = evaluate(ctx({ signal: { ema20: 18, ema50: 19, rsi14: 80 } }), policy);
+    expect(v.allowed).toBe(true);
+    expect(v.results.find((r) => r.rule === "signal")?.ok).toBe(true);
+  });
+
+  it.each([
+    ["taint + düşüş trendinde alım", { untrusted: { tainted: true }, signal: { ema20: 18, ema50: 19, rsi14: 50 } }],
+    ["taint + aşırı alımda alım", { untrusted: { tainted: true }, signal: { ema20: 20, ema50: 19, rsi14: 75 } }],
+    ["taint + yükseliş trendinde satım", { untrusted: { tainted: true }, signal: { ema20: 20, ema50: 19, rsi14: 50 }, intent: { side: "sell" } }],
+    ["taint + gösterge yok", { untrusted: { tainted: true }, signal: undefined }],
+  ])("%s → SIGNAL_NOT_CONFIRMED", (_name, over) => {
+    const v = evaluate(ctx(over as never), policy);
+    expect(v.allowed).toBe(false);
+    expect(v.code).toBe("SIGNAL_NOT_CONFIRMED");
   });
 
   it.each([

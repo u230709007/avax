@@ -27,6 +27,29 @@ const PolicySchema = z
     chainCacheSeconds: z.number().int().positive(),
     anchorEveryDecisions: z.number().int().positive(),
     anchorEverySeconds: z.number().int().positive(),
+    /** true: her emirden önce niyet hash'i Avalanche IntentGate'e yazılır; yazılamazsa emir gitmez. */
+    intentCommit: z.boolean(),
+    /** Güvenilmeyen içerik (web/haber) okunduktan sonraki taint penceresi ve kuralları. */
+    untrusted: z
+      .object({
+        taintSeconds: z.number().int().positive(),
+        requireApproval: z.boolean(),
+        /** Onay hangi içerikten sonra: "all" her web/haber, "web_or_flagged" web sayfası veya bayraklı haber. */
+        approvalFor: z.enum(["all", "web_or_flagged"]),
+        requireSignal: z.boolean(),
+        rsiOverbought: z.number().min(50).max(100),
+        rsiOversold: z.number().min(0).max(50),
+      })
+      .strict(),
+    /** ATK uyumlu kapı (docs/compat.md). accountReads "raw" ham bakiye/ID'yi ajana açar: bilinçli seçim, hash'e girer. */
+    compat: z
+      .object({
+        enabled: z.boolean(),
+        accountReads: z.enum(["deny", "raw"]),
+        /** Web/haber görünümü: "digest" karantina özeti, "sanitized" taranmış ham metin (bayraklıysa metin gitmez). */
+        contentReads: z.enum(["digest", "sanitized"]),
+      })
+      .strict(),
   })
   .strict();
 

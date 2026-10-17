@@ -12,6 +12,9 @@
 - [Avalanche](avalanche.md) — PolicyRegistry, AuditAnchor, kill-switch, deploy
 - [Audit](audit.md) — hash zinciri, Merkle, anchor, SQLite
 - [UI](ui.md) — ekranlar, API, veri kaynakları
+- [ATK uyumlu kapı](compat.md) — okx.ai ajanları kod değiştirmeden guardian arkasında (ATK tool adları, çeviri, tool sınıfları)
+- [Servis](service.md) — uzak MCP, API anahtarları, planlar, herkese açık kanıt paneli
+- [ATK uyumlu kapı](compat.md) — okx.ai / okx-trade-mcp ajanları için tak-çalıştır güvenlik katmanı (`/atk`, `mcp:atk`)
 - [Tehdit modeli](threat-model.md) — olay → savunma tablosu, kalan riskler
 - [Test](testing.md) — birim, kontrat, entegrasyon, docs:check
 - [Runbook](runbook.md) — kurulum, hata durumları, demo öncesi kontrol listesi
@@ -25,3 +28,6 @@ Kararlar (ADR):
 - [004 node:sqlite](decisions/004-node-sqlite.md)
 - [005 strict tool kapalı](decisions/005-strict-tool-kapali.md)
 - [006 Sağlayıcıdan bağımsız LLM](decisions/006-saglayici-bagimsiz-llm.md)
+
+- [Hesap girişi ve ziyaretçi demosu](accounts.md): Supabase kurulumu, kişisel alan ve yönetici ayrımı.
+- [Kişisel hesaplar](tenants.md): kullanıcı başına Guardian, kendi OKX demo anahtarı, izolasyon ve sınırlar.

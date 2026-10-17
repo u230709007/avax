@@ -1,4 +1,5 @@
 // docs: docs/atk-integration.md
+import { mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -34,9 +35,27 @@ export class AtkError extends Error {
   }
 }
 
+export interface AtkToolDef {
+  name: string;
+  description: string;
+  inputSchema: { type: "object"; properties?: Record<string, unknown>; required?: string[] };
+}
+
+export interface OkxCredentials {
+  apiKey: string;
+  secretKey: string;
+  passphrase: string;
+}
+
 export interface AtkOptions {
   profile: string;
   site: string;
+  /**
+   * Kişisel hesap (docs/tenants.md): anahtar sadece buradan gelir, sürecin HOME'u boş bir dizindir.
+   * Böylece sahibin ~/.okx/config.toml'u, OAuth oturumu veya .env'deki OKX anahtarları asla okunmaz.
+   */
+  credentials?: OkxCredentials;
+  home?: string;
 }
 
 /**
@@ -46,6 +65,7 @@ export interface AtkOptions {
 export class AtkClient {
   private client: Client | undefined;
   private available = new Set<string>();
+  private defs = new Map<string, AtkToolDef>();
 
   constructor(private readonly opts: AtkOptions) {}
 
@@ -55,9 +75,19 @@ export class AtkClient {
     // ATK sürecine sadece gerekli ortam değişkenleri geçer (ANTHROPIC_API_KEY, ANCHOR_PRIVATE_KEY vb. geçmez).
     // OKX anahtarları ya ~/.okx/config.toml'da ya da .env'deki OKX_API_KEY/OKX_SECRET_KEY/OKX_PASSPHRASE'de durur.
     const env: Record<string, string> = {};
-    for (const k of ["HOME", "PATH", "USERPROFILE", "APPDATA", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE", "OKX_API_KEY", "OKX_SECRET_KEY", "OKX_PASSPHRASE"]) {
+    const own = this.opts.credentials;
+    const pass = own ? ["PATH", "SYSTEMROOT", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE"] : ["HOME", "PATH", "USERPROFILE", "APPDATA", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE", "OKX_API_KEY", "OKX_SECRET_KEY", "OKX_PASSPHRASE"];
+    for (const k of pass) {
       const v = process.env[k];
       if (v) env[k] = v;
+    }
+    if (own) {
+      if (!this.opts.home) throw new AtkError("connect", "Kişisel ATK süreci için izole HOME gerekli", "ATK_UNAVAILABLE");
+      mkdirSync(this.opts.home, { recursive: true });
+      env.HOME = env.USERPROFILE = env.APPDATA = this.opts.home;
+      env.OKX_API_KEY = own.apiKey;
+      env.OKX_SECRET_KEY = own.secretKey;
+      env.OKX_PASSPHRASE = own.passphrase;
     }
     env.OKX_DEMO = "1";
     const transport = new StdioClientTransport({
@@ -76,6 +106,12 @@ export class AtkClient {
     await this.client.connect(transport);
     const { tools } = await this.client.listTools();
     this.available = new Set(tools.map((t) => t.name));
+    this.defs = new Map(tools.map((t) => [t.name, { name: t.name, description: t.description ?? "", inputSchema: t.inputSchema as AtkToolDef["inputSchema"] }]));
+  }
+
+  /** Paketin gerçek tool tanımları (ATK uyumlu kapı bunları aynen yayınlar, docs/compat.md). Sadece allowlist'tekiler. */
+  toolDefs(names: readonly string[]): AtkToolDef[] {
+    return names.filter((n) => (ATK_ALLOWED_TOOLS as readonly string[]).includes(n)).flatMap((n) => this.defs.get(n) ?? []);
   }
 
   missingTools(): string[] {

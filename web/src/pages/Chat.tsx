@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
+import { ModelPicker } from "../components/ModelPicker";
 import { Badge, Button, Card, Empty, Json, Mono } from "../components/ui";
 import { fmtTime, fmtUsd, TOOL_LABELS } from "../format";
 import type { Dispatch, State } from "../store";
@@ -36,7 +37,14 @@ export function Chat({ state, dispatch }: { state: State; dispatch: Dispatch }) 
       const r = await api<{ raw: string; display: string }>("/api/chat", { method: "POST", body: { text: msg } });
       dispatch({ type: "chat_agent", raw: r.raw, display: r.display, mode: "chat", ts: Date.now() });
     } catch (e) {
-      setError((e as Error).message === "busy" ? "Ajan başka bir turu işliyor (otonom mod olabilir)." : (e as Error).message);
+      const code = (e as Error).message;
+      setError(
+        code === "busy"
+          ? "Ajan başka bir turu işliyor (otonom mod olabilir)."
+          : code === "CHAT_INPUT_BLOCKED"
+            ? "Mesajda kodlanmış içerik bulundu (Mors, base64, hex veya görünmez karakter). Mesaj ajana gönderilmedi; çözülmüş hali audit kaydında."
+            : code,
+      );
     } finally {
       dispatch({ type: "busy", busy: false });
     }
@@ -46,7 +54,7 @@ export function Chat({ state, dispatch }: { state: State; dispatch: Dispatch }) 
 
   return (
     <div className="grid h-[calc(100vh-19rem)] min-h-[32rem] grid-cols-1 gap-6 lg:grid-cols-[1fr_24rem]">
-      <Card className="flex min-h-0 flex-col">
+      <Card className="flex min-h-0 flex-col" title="Ajan" action={state.status?.chatEnabled && <ModelPicker state={state} onError={setError} />}>
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {state.chat.length === 0 && <Empty>Ajanla konuşmaya başlayın. Bir mesaja tıklayınca LLM'e giden maskeli içerik sağda görünür.</Empty>}
           <ul className="flex flex-col gap-4">
@@ -182,6 +190,9 @@ function ApprovalCard({ approval }: { approval: Approval }) {
         {s.tpPct ? ` · TP %${s.tpPct}` : ""}
       </div>
       <div className="mt-1 text-xs text-muted">{s.rules.filter((r) => r.ok).length}/{s.rules.length} kural geçti</div>
+      {s.reasons?.includes("UNTRUSTED_CONTENT") && (
+        <div className="mt-1 text-xs text-muted">Bağlamda güvenilmeyen içerik (web/haber) var; yön piyasa verisiyle doğrulandı, son karar sizde.</div>
+      )}
       <div className="mt-3 flex items-center gap-2">
         <Button variant="primary" disabled={busy || Boolean(result)} onClick={() => act("approve")}>Onayla</Button>
         <Button disabled={busy || Boolean(result)} onClick={() => act("reject")}>Reddet</Button>

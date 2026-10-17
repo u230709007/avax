@@ -1,7 +1,7 @@
 // docs: docs/audit.md
 import type { Store } from "../store/db.js";
 import type { AvalancheGuard } from "../chain/avalanche.js";
-import type { AuditLog } from "./log.js";
+import { AuditLog } from "./log.js";
 
 export interface AnchorRow {
   id: number;
@@ -21,6 +21,8 @@ export class Anchorer {
   private running = false;
   private lastAnchorAt = Date.now();
   lastError: string | undefined;
+  /** Kişisel hesaplarda kapalı: AuditAnchor tek ve ardışık bir seq akışı kabul eder (docs/tenants.md). */
+  disabled = false;
 
   constructor(
     private readonly store: Store,
@@ -57,8 +59,37 @@ export class Anchorer {
     return this.list().find((a) => a.fromSeq <= seq && seq <= a.toSeq && a.txHash);
   }
 
+  /** Kaydın Merkle kanıtını zincirdeki kökle karşılaştırır (özel ve herkese açık API ortak kullanır). */
+  async verify(seq: number): Promise<{ error: "not_anchored_yet" | "anchor_not_found_onchain" } | {
+    seq: number;
+    onchainRoot: string;
+    localRoot: string;
+    verified: boolean;
+    chainIntact: boolean;
+    txHash: string | null;
+  }> {
+    const anchor = this.forSeq(seq);
+    if (!anchor) return { error: "not_anchored_yet" };
+    const local = this.audit.proofFor(seq, anchor.fromSeq, anchor.toSeq);
+    const count = await this.chain.anchorCount();
+    for (let i = count - 1; i >= 0; i--) {
+      const onchain = await this.chain.readAnchor(i);
+      if (onchain.fromSeq <= seq && seq <= onchain.toSeq) {
+        return {
+          seq,
+          onchainRoot: onchain.root,
+          localRoot: local.root,
+          verified: AuditLog.verify(local.leaf, local.proof, onchain.root),
+          chainIntact: this.audit.verifyChain().ok,
+          txHash: anchor.txHash,
+        };
+      }
+    }
+    return { error: "anchor_not_found_onchain" };
+  }
+
   async tick(force = false): Promise<void> {
-    if (this.running || !this.chain.auditAnchor) return;
+    if (this.disabled || this.running || !this.chain.auditAnchor) return;
     this.running = true;
     try {
       const lastSeq = this.audit.lastSeq();

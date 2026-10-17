@@ -60,3 +60,6 @@ Genel bakış · Sohbet · Kararlar · Audit · Ayarlar. Ayrıntılar ve veri ka
 
 ## Kontrol
 Her arayüz değişikliğinden sonra: 1440px ve 390px ekran görüntüsü; `scrollWidth > innerWidth` olmamalı (LEARN L-007).
+
+## Tanıtım sayfası istisnası
+2026-10-17 kullanıcı talebi: giriş öncesi sayfada verilen videolar arka plan/özellik kartı medyası olarak kullanılır. `landing.css` yalnızca tanıtım ve giriş penceresini biçimlendirir. Siyah-beyaz görünüm, büyük başlıklar, iki sütunlu kartlar ve etkileşimli süreç çizgisi kullanılır. Video duraklatılabilir ve reduced-motion tercihini izler. Okunabilirlik için videonun üzerinde siyah saydamlık geçişi kullanılabilir. Giriş sonrası panel tasarımı korunur.

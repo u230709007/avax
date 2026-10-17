@@ -18,7 +18,7 @@ function paramsSummary(r: AuditRow): string {
   return vals.length ? vals.join(" · ") : "—";
 }
 
-export function DecisionsTable({ rows, anchors, filter, explorer }: { rows: AuditRow[]; anchors: Anchor[]; filter?: (r: AuditRow) => boolean; explorer?: string }) {
+export function DecisionsTable({ rows, anchors, filter, explorer, readOnly = false }: { rows: AuditRow[]; anchors: Anchor[]; filter?: (r: AuditRow) => boolean; readOnly?: boolean; explorer?: string }) {
   const [open, setOpen] = useState<AuditRow>();
   const list = filter ? rows.filter(filter) : rows;
   if (!list.length) return <Empty>Henüz karar yok.</Empty>;
@@ -81,12 +81,12 @@ export function DecisionsTable({ rows, anchors, filter, explorer }: { rows: Audi
           </li>
         ))}
       </ul>
-      <DecisionDrawer row={open} onClose={() => setOpen(undefined)} explorer={explorer} />
+      <DecisionDrawer readOnly={readOnly} row={open} onClose={() => setOpen(undefined)} explorer={explorer} />
     </>
   );
 }
 
-function DecisionDrawer({ row, onClose, explorer }: { row?: AuditRow; onClose: () => void; explorer?: string }) {
+function DecisionDrawer({ row, onClose, explorer, readOnly }: { readOnly?: boolean; row?: AuditRow; onClose: () => void; explorer?: string }) {
   const [verify, setVerify] = useState<{ verified: boolean; onchainRoot: string; txHash: string; chainIntact: boolean } | { error: string }>();
   const [loading, setLoading] = useState(false);
   if (!row) return null;
@@ -97,6 +97,7 @@ function DecisionDrawer({ row, onClose, explorer }: { row?: AuditRow; onClose: (
   const decoded = (row.detail as { decoded?: { kind: string; text: string }[] } | null)?.decoded;
 
   const doVerify = async () => {
+    if (readOnly) { setVerify({ error: "Örnek kayıt; zincir doğrulaması yok." }); return; }
     setLoading(true);
     try {
       setVerify(await api(`/api/verify/${row.seq}`));
@@ -184,3 +185,4 @@ function DecisionDrawer({ row, onClose, explorer }: { row?: AuditRow; onClose: (
     </Drawer>
   );
 }
+
