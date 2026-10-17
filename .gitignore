@@ -19,3 +19,5 @@ web/.env.*.local
 *.wav
 # Yerel API anahtarı içerir
 .codex/config.toml
+# Sitenin videoları repoya girer (Landing)
+!web/public/media/*.mp4
