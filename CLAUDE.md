@@ -76,4 +76,4 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · .env sistem değişkenlerini ezer (src/env.ts), açılışta .env yolu/LLM_PROVIDER, port dolu uyarısı; sohbet ekranında aktif model. Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts), Gemini 429 ayrımı + yedek model, kill-switch ön kontrolleri.
+2026-10-17 · Sohbette mesaj gönderince ekran çökmesi düzeldi (useEffect dönüş değeri), eski web/dist uyarısı. .env sistem değişkenlerini ezer (src/env.ts), açılışta .env yolu/LLM_PROVIDER, port dolu uyarısı; sohbet ekranında aktif model. Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts), Gemini 429 ayrımı + yedek model, kill-switch ön kontrolleri.

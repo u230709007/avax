@@ -1,6 +1,6 @@
 // docs: docs/ui.md
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { timingSafeEqual } from "node:crypto";
 import Fastify, { type FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
@@ -175,8 +175,23 @@ export async function startServer(app: App, opts: ServerOptions) {
   if (existsSync(webDist)) {
     await fastify.register(fastifyStatic, { root: webDist });
     fastify.setNotFoundHandler((req, reply) => (req.url.startsWith("/api") ? reply.code(404).send() : reply.sendFile("index.html")));
+    const builtAt = statSync(join(webDist, "index.html"), { throwIfNoEntry: false })?.mtimeMs ?? 0;
+    if (newestMtime(resolve("web/src")) > builtAt) {
+      console.log(`UYARI: :${opts.port} eski arayüz paketini (web/dist) sunuyor; web/src daha yeni. "npm run web:build" çalıştır veya :5173'ü kullan.`);
+    }
   }
 
   await fastify.listen({ host: "127.0.0.1", port: opts.port });
   return fastify;
+}
+
+/** Klasördeki en yeni dosyanın değişiklik zamanı (ms). */
+function newestMtime(dir: string): number {
+  if (!existsSync(dir)) return 0;
+  let max = 0;
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    max = Math.max(max, e.isDirectory() ? newestMtime(p) : statSync(p).mtimeMs);
+  }
+  return max;
 }

@@ -14,7 +14,9 @@ export function Settings({ state }: { state: State }) {
   useEffect(() => {
     api<PolicyResp>("/api/policy").then(setP).catch(() => undefined);
   }, []);
-  useEffect(() => setAuto(state.status?.autonomous?.enabled ?? false), [state.status?.autonomous?.enabled]);
+  useEffect(() => {
+    setAuto(state.status?.autonomous?.enabled ?? false);
+  }, [state.status?.autonomous?.enabled]);
   const chain = state.status?.chain;
 
   const toggleAuto = async () => {

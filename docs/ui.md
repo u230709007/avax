@@ -29,3 +29,7 @@ Geliştirme: `npm run web` (:5173, /api ve /ws :7070'e proxy). Üretim: `npm run
 
 ## Son güncelleme
 2026-10-16 · tablo taşması düzeltildi (LEARN L-007).
+
+## Sık sorunlar
+- `:7070` arayüzü `web/dist`'ten sunar; kaynak değiştiyse açılışta "eski arayüz paketi" uyarısı çıkar → `npm run web:build` veya `:5173` (vite, her zaman güncel).
+- Efekt gövdeleri değer döndürmez (LEARN L-015): `scrollIntoView` yeni Chrome'da Promise döner.

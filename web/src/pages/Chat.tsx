@@ -21,7 +21,11 @@ export function Chat({ state, dispatch }: { state: State; dispatch: Dispatch }) 
   const [error, setError] = useState<string>();
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [state.chat.length, state.pendingTraffic.length]);
+  // Gövde süslü parantezli: yeni Chrome'da scrollIntoView Promise döner; dönüş değeri React'e
+  // temizlik fonksiyonu gibi verilirse "l is not a function" ile ekran çöker.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [state.chat.length, state.pendingTraffic.length]);
 
   const send = async (msg: string) => {
     if (!msg.trim() || state.agentBusy) return;
