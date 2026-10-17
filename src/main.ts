@@ -3,6 +3,7 @@ import { bootstrap } from "./bootstrap.js";
 import { createGuardianMcpServer } from "./mcpServer.js";
 import { ChatHost, type AgentHost } from "./chat/host.js";
 import { GeminiChatHost } from "./chat/geminiHost.js";
+import { GroqChatHost } from "./chat/groqHost.js";
 import { llmProvider } from "./llm/provider.js";
 import { startServer } from "./server.js";
 
@@ -16,7 +17,7 @@ async function main() {
   const provider = llmProvider();
   if (provider) {
     const server = createGuardianMcpServer(app.guardian);
-    chat = provider === "gemini" ? new GeminiChatHost(server) : new ChatHost(server);
+    chat = provider === "gemini" ? new GeminiChatHost(server) : provider === "groq" ? new GroqChatHost(server) : new ChatHost(server);
     await chat.connect();
   }
 
@@ -62,7 +63,7 @@ async function main() {
   console.log(`Guardian: http://127.0.0.1:${port}  (token ile)`);
   console.log(`OKX ATK: ${app.atkError ? `BAĞLANAMADI: ${app.atkError}` : "bağlı (demo)"}`);
   console.log(`Avalanche: ${chain.reachable ? (chain.policyHashMatches ? "policy eşleşti" : "POLICY HASH UYUŞMUYOR") : `okunamadı: ${chain.error}`}${chain.paused ? " · DURDURULMUŞ" : ""}`);
-  console.log(`Sohbet: ${chat ? `açık (${chat.label})` : "kapalı (GEMINI_API_KEY veya ANTHROPIC_API_KEY yok)"}`);
+  console.log(`Sohbet: ${chat ? `açık (${chat.label})` : "kapalı (GROQ_API_KEY, GEMINI_API_KEY veya ANTHROPIC_API_KEY yok)"}`);
 }
 
 main().catch((e) => {

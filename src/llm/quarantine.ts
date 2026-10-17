@@ -4,6 +4,7 @@ import { z } from "zod";
 import { SANITIZE_FLAGS, type SanitizeFlag } from "../ingest/sanitize.js";
 import { anthropic, QUARANTINE_MODEL } from "./anthropic.js";
 import { gemini, GEMINI_QUARANTINE_MODEL, withRetry } from "./gemini.js";
+import { GROQ_QUARANTINE_MODEL, groqChat } from "./groq.js";
 import { llmProvider } from "./provider.js";
 
 export const QUARANTINE_FLAGS = [...SANITIZE_FLAGS, "QUARANTINE_FAILED", "SOCIAL_ENGINEERING"] as const;
@@ -60,7 +61,7 @@ For each distinct news item or the page as a whole, output one item:
 Output only the JSON object.`;
 
 /**
- * Karantina modeli (Haiku 5.5 veya Gemini Flash-Lite) ile şemalı özet. Ham metni gören TEK model budur ve hiç tool'u yoktur.
+ * Karantina modeli (Haiku 5.5, Gemini Flash-Lite veya Groq) ile şemalı özet. Ham metni gören TEK model budur ve hiç tool'u yoktur.
  * Şemaya uymayan çıktı atılır; deterministik sanitize bayrakları her durumda korunur.
  */
 export async function quarantineDigest(text: string, sanitizeFlags: SanitizeFlag[]): Promise<DigestItem[]> {
@@ -70,7 +71,7 @@ export async function quarantineDigest(text: string, sanitizeFlags: SanitizeFlag
   if (!provider) return failed();
   let items: z.infer<typeof DigestSchema>["items"] | undefined;
   try {
-    items = provider === "gemini" ? await geminiDigest(text) : await anthropicDigest(text);
+    items = provider === "gemini" ? await geminiDigest(text) : provider === "groq" ? await groqDigest(text) : await anthropicDigest(text);
   } catch {
     items = undefined;
   }
@@ -96,6 +97,25 @@ async function geminiDigest(text: string) {
   if (!res.text) return undefined;
   // Model çıktısı da güvenilmez: Zod ile yeniden doğrulanır, şema dışı ise atılır.
   const parsed = DigestSchema.safeParse(JSON.parse(res.text));
+  return parsed.success ? parsed.data.items : undefined;
+}
+
+async function groqDigest(text: string) {
+  // Groq JSON modu şema almaz: şema sistem mesajında verilir, sonuç Zod ile doğrulanır.
+  const res = await withRetry(() =>
+    groqChat({
+      model: GROQ_QUARANTINE_MODEL(),
+      messages: [
+        { role: "system", content: `${SYSTEM}\nJSON schema: ${JSON.stringify(GEMINI_DIGEST_JSON_SCHEMA)}` },
+        { role: "user", content: userContent(text) },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0,
+    }),
+  );
+  const out = res.choices[0]?.message.content;
+  if (!out) return undefined;
+  const parsed = DigestSchema.safeParse(JSON.parse(out));
   return parsed.success ? parsed.data.items : undefined;
 }
 

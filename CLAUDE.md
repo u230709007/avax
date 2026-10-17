@@ -8,7 +8,7 @@
 
 ## Proje özeti
 OKX TR × Team1 Agentic Hackathon için prompt-injection'a dayanıklı otonom AVAX trade ajanı.
-LLM (Gemini veya Opus 5.5, `LLM_PROVIDER`) sadece maskeli veri görür ve 7 dar tool kullanır; her isteği deterministik guardian kodu
+LLM (Groq, Gemini veya Opus 5.5, `LLM_PROVIDER`) sadece maskeli veri görür ve 7 dar tool kullanır; her isteği deterministik guardian kodu
 kurallardan geçirir ve emri kendisi üretir. ATK (`okx-trade-mcp`) her zaman `--demo` ile çalışır.
 Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanabilir.
 
@@ -24,8 +24,8 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - `src/policy/` → intent şeması, kurallar, motor → docs/policy.md
 - `src/masking/` → Vault: tanıtıcı, kova, gösterim etiketi, sızıntı tarama → docs/masking.md
 - `src/ingest/` → sanitize: gizli metin/Mors/base64/unicode → docs/quarantine.md
-- `src/llm/` → sağlayıcı seçimi, Anthropic + Gemini istemcileri, karantina → docs/llm.md, docs/quarantine.md
-- `src/chat/` → AgentHost: Opus (host.ts) / Gemini (geminiHost.ts) tool döngüsü, ekranda maske açma → docs/llm.md, docs/masking.md
+- `src/llm/` → sağlayıcı seçimi, Anthropic + Gemini + Groq istemcileri, karantina → docs/llm.md, docs/quarantine.md
+- `src/chat/` → AgentHost: Opus (host.ts) / Gemini (geminiHost.ts) / Groq (groqHost.ts) tool döngüsü, ekranda maske açma → docs/llm.md, docs/masking.md
 - `src/upstream/` → ATK MCP istemcisi + tool allowlist + OKX tipleri → docs/atk-integration.md
 - `src/chain/` → Fuji: PolicyRegistry okuma, AuditAnchor yazma → docs/avalanche.md
 - `src/audit/` → hash zinciri, Merkle, anchor döngüsü → docs/audit.md
@@ -73,7 +73,8 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - `.env` git dışıdır; yeni bulut konteynerlerinde yoktur, kullanıcının PC'sinde olmalı (OKX key/secret/passphrase, GEMINI_API_KEY, LLM_PROVIDER=gemini).
 - `main` dalı açıldı; `npm run dev` artık `predev` ile önce `web/dist`'i derler (eski arayüz derlemesi sunulmaz).
 - Gemini gerçek API ile doğrulandı: karantina (4 saldırı sayfası) ve ajan döngüsü (read_url, ret). Google API bu ortamdan erişilebilir; OKX/Fuji değil.
+- Groq sağlayıcısı eklendi (kullanıcı Groq kullanıyor: `LLM_PROVIDER=groq`, `GROQ_API_KEY`); bu ortamdan api.groq.com engelli, canlı test edilmedi.
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · Arayüz yeniden tasarlandı (BuildProof referansı: DESIGN.md, styles.css, Shell.tsx, ui.tsx); main'e birleştirildi, branch kuralı eklendi. `predev` web/dist'i her başlangıçta derler; main dalı açıldı. Sohbette "l is not a function" çökmesi düzeltildi (Chat.tsx scrollIntoView effect dönüşü, L-011); Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.
+2026-10-17 · Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts, provider/quarantine/main). Öncesi: BuildProof tarzı arayüz main'e birleştirildi.
