@@ -1,6 +1,7 @@
 // docs: docs/accounts.md
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ShieldCheck, X } from "lucide-react";
+import { guardianUrl } from "./guardianUrl";
 import { accountAuth } from "./accountAuth";
 
 export function AccessDialog({ onClose, onDemo, onAdmin, onAccount }: { onClose: () => void; onDemo: () => void; onAdmin: () => void; onAccount: () => void }) {
@@ -40,7 +41,7 @@ const accessToken = async () => (await accountAuth?.auth.getSession())?.data.ses
 export async function accountApi<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const t = await accessToken();
   if (!t) throw Object.assign(new Error("no_session"), { status: 401 });
-  const res = await fetch(path, { method: init?.method ?? "GET", headers: { authorization: `Bearer ${t}`, ...(init?.body !== undefined ? { "content-type": "application/json" } : {}) }, body: init?.body !== undefined ? JSON.stringify(init.body) : undefined, signal: AbortSignal.timeout(60000) });
+  const res = await fetch(guardianUrl(path), { method: init?.method ?? "GET", headers: { authorization: `Bearer ${t}`, ...(init?.body !== undefined ? { "content-type": "application/json" } : {}) }, body: init?.body !== undefined ? JSON.stringify(init.body) : undefined, signal: AbortSignal.timeout(60000) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw Object.assign(new Error((data as { error?: string }).error ?? res.statusText), { status: res.status, detail: (data as { message?: string }).message });
   return data as T;

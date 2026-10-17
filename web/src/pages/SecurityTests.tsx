@@ -3,6 +3,7 @@ import { ArrowRight, Bot, FileWarning, ShieldCheck, Wallet, RefreshCw } from "lu
 import type { Assessment, SecurityReport } from "../../../src/service/securityTypes";
 import { Badge, Button, Card, Metric } from "../components/ui";
 import { fmtDateTime } from "../format";
+import { guardianUrl } from "../guardianUrl";
 
 const labels: Record<Assessment, { label: string; tone: "ok" | "warn" | "bad" | "idle"; description: string }> = {
   blocked: { label: "Politika reddi", tone: "ok", description: "Guardian bu isteği belirtilen politika kuralıyla reddetti. Bu kayıt, bağımsız OKX emir geçmişi kontrolü içermez." },
@@ -23,7 +24,7 @@ export function SecurityTests() {
     const controller = new AbortController();
     setBusy(true);
     setError(false);
-    void fetch("/security-tests.json", { signal: controller.signal, cache: "no-store" })
+    void fetch(guardianUrl("/security-tests.json"), { signal: controller.signal, cache: "no-store" })
       .then(async res => {
         if (!res.ok) throw new Error("fetch");
         const data = await res.json() as SecurityReport;

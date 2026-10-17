@@ -1,6 +1,7 @@
 import { SecurityTests } from "./pages/SecurityTests";
 import { useEffect, useState } from "react";
 import { clearAuth, useAccountSession, useToken } from "./api";
+import { guardianUrl } from "./guardianUrl";
 import { GridBackground } from "./components/GridBackground";
 import { Shell, type Page } from "./components/Shell";
 import { Card, Mono } from "./components/ui";
@@ -29,7 +30,7 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/approvals", { headers: { "x-ui-token": token }, signal: AbortSignal.timeout(10000) });
+      const res = await fetch(guardianUrl("/api/approvals"), { headers: { "x-ui-token": token }, signal: AbortSignal.timeout(10000) });
       if (!res.ok) throw new Error(res.status === 401 || res.status === 403 ? "Token geçersiz. Lütfen tekrar kontrol et." : "Sunucuya erişilemiyor. Lütfen yeniden dene.");
       const approvals = await res.json();
       if (!Array.isArray(approvals)) throw new Error("Guardian sunucusuna bağlanılamadı.");

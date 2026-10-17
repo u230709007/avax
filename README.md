@@ -1,10 +1,10 @@
 # Sealed Intent Guardian
 
-**Prompt injection ile kandırılsa bile para kaybettiremeyen otonom AVAX trade ajanı.**
+**Otonom trade ajanları için kodla uygulanan işlem sınırları ve Avalanche üzerinde doğrulanabilir karar kayıtları.**
 OKX TR × Team1 Türkiye Agentic Hackathon — **OKX Agent Trade Kit (ATK)** + **Avalanche Fuji**.
 
 > Varsayım: LLM tamamen ele geçirilmiştir ve saldırganın istediği her tool çağrısını yapar.
-> Amaç: bu durumda bile kullanıcının parasının çıkamaması. Güvenlik LLM'e veya prompt'a değil, **koda ve zincire** dayanır.
+> Amaç: Guardian üzerinden gönderilen işlemlerde yetki ve risk sınırlarını korumak. Güvenlik LLM'e veya prompt'a değil, **koda ve zincire** dayanır; yatırım zararını ortadan kaldırmaz.
 
 ---
 
@@ -115,7 +115,7 @@ Tüm kodlar ve emir üretimi: [docs/policy.md](docs/policy.md).
 | `IntentGate.sol` | Her emirden önce niyet hash'i yazılır; kill-switch kontrolü zincirde atomik yapılır. |
 | `AuditAnchor.sol` | Audit kararlarının Merkle kökleri (her 20 karar veya 5 dakikada bir). |
 
-- Sunucu ele geçirilip `policy.json` sessizce gevşetilirse hash tutmaz → işlem kapanır.
+- Guardian kodu güvenilir kaldığı sürece policy değişikliği zincirdeki hash ile eşleşmezse işlem kapanır. Sunucunun tamamen ele geçirilmesi bu güven varsayımının dışındadır.
 - Kullanıcı panikte kendi cüzdanından `pause()` çağırır → sonraki her öneri `PAUSED_ONCHAIN`. Ölçülen gecikme: **~3,6 sn**.
 - Herhangi bir karar `npm run audit:verify -- <seq>` ile Merkle kanıtı üzerinden zincirdeki kökle doğrulanır (Snowtrace'te de görülür).
 
@@ -242,7 +242,7 @@ docs/                tüm dokümanlar
 
 ## Sınırlar ve kalan riskler
 - **OKX API anahtarı çalınırsa guardian atlanır.** Bu yüzden anahtar sadece trade yetkili, çekim kapalı, IP whitelist'li ve tercihen alt hesap olmalı.
-- Allowlist içinde kurallara uygun ama kötü işlemler mümkündür; zarar günlük %5 ile sınırlıdır.
+- Allowlist içinde kurallara uygun ama kötü işlemler mümkündür. Günlük zarar eşiği yeni emirleri engeller; açık pozisyonlar ve gerçekleşme koşulları nedeniyle kesin kayıp tavanı değildir.
 - Guardian sadece kendisinden geçen içeriği tarar. Ajan web'i başka bir araçla okursa tarama olmaz, ancak her emir yine kurallardan geçer ve transfer yoktur.
 - ATK her zaman `--demo` ile çalışır; proje gerçek parayla işlem yapmaz.
 - Kişisel hesapların audit kökleri zincire yazılmaz (AuditAnchor tek akış).

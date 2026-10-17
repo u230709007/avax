@@ -37,6 +37,8 @@ async function main() {
     uiToken,
     tenants,
     service: publicPort > 0 ? { mcpUrl: `${publicUrl}/mcp`, publicUrl } : undefined,
+    // UI_ORIGINS: arayüz başka yerden sunuluyorsa (örn. https://avax.vercel.app), virgülle ayrılmış origin listesi.
+    corsOrigins: (process.env.UI_ORIGINS ?? "").split(",").map((o) => o.trim().replace(/\/$/, "")).filter(Boolean),
   });
 
   if (publicPort > 0) await startGateway(app, { host: publicHost, port: publicPort });

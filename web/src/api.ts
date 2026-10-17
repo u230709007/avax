@@ -2,6 +2,8 @@
  * Guardian API istemcisi. İki kimlik: sahip UI token'ı (URL'den ?token= bir kez alınır, sessionStorage'da tutulur)
  * veya kişisel hesap oturumu (Supabase erişim token'ı, her istekte tazelenir; sunucu doğrular, docs/tenants.md).
  */
+import { guardianUrl, guardianWsUrl } from "./guardianUrl";
+
 const KEY = "guardian-token";
 
 export function getToken(): string | null {
@@ -71,7 +73,7 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(guardianUrl(path), {
     method: init?.method ?? "GET",
     headers: { ...(await authHeaders()), ...(init?.body !== undefined ? { "content-type": "application/json" } : {}) },
     body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
@@ -88,10 +90,9 @@ export function connectWs(onEvent: (e: WsEvent) => void, onStatus: (open: boolea
   let closed = false;
   let retry: number | undefined;
   const open = async () => {
-    const proto = location.protocol === "https:" ? "wss" : "ws";
     const auth = accountToken ? `access_token=${encodeURIComponent((await accountToken()) ?? "")}` : `token=${encodeURIComponent(token ?? "")}`;
     if (closed) return;
-    ws = new WebSocket(`${proto}://${location.host}/ws?${auth}`);
+    ws = new WebSocket(guardianWsUrl(`/ws?${auth}`));
     ws.onopen = () => onStatus(true);
     ws.onmessage = (m) => {
       try {

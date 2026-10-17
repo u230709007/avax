@@ -1,5 +1,5 @@
 // docs: docs/atk-integration.md
-import type { AtkClient } from "./atkClient.js";
+import { AtkError, type AtkClient } from "./atkClient.js";
 
 /** OKX v5 yanıtları için minimal tipler (sadece kullandığımız alanlar). */
 export interface OkxBalanceDetail {
@@ -89,9 +89,14 @@ export class AtkTools {
   }
 
   async placeOrder(market: "spot" | "swap", params: Record<string, unknown>): Promise<OkxOrderAck> {
-    const rows = await this.atk.call<OkxOrderAck[]>(market === "spot" ? "spot_place_order" : "swap_place_order", params);
+    const tool = market === "spot" ? "spot_place_order" : "swap_place_order";
+    const rows = await this.atk.call<OkxOrderAck[]>(tool, params);
     const ack = rows?.[0];
-    if (!ack || (ack.sCode && ack.sCode !== "0")) throw new Error(`OKX emri reddetti: ${ack?.sCode} ${ack?.sMsg}`);
+    if (ack?.sCode === "54092") throw new AtkError(tool,
+      "API anahtarının ait olduğu demo ana/alt hesapta Trade > Demo trading > Spot sayfasındaki feragatnameyi onaylayın. Pencere görünmezse dili değiştirip tekrar deneyin. Her alt hesap ayrı onay gerektirir.", "OKX_DISCLAIMER_REQUIRED");
+    if (!ack || ack.sCode !== "0" || typeof ack.ordId !== "string" || !ack.ordId.trim()) {
+      throw new AtkError(tool, `OKX emir kabulü doğrulanamadı: ${ack?.sCode ?? "MISSING_ACK"}`, "OKX_ORDER_NOT_CONFIRMED");
+    }
     return ack;
   }
 

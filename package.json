@@ -26,6 +26,7 @@
     "killswitch:measure": "tsx scripts/killswitch-latency.ts",
     "service:key": "tsx scripts/service-key.ts",
     "audit:verify": "tsx scripts/verify-audit.ts",
+    "demo:check": "tsx scripts/demo-check.ts",
     "attack:replay": "tsx examples/attack-replay.ts"
   },
   "dependencies": {

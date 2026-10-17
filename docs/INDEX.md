@@ -20,6 +20,7 @@
 - [Runbook](runbook.md) — kurulum, hata durumları, demo öncesi kontrol listesi
 - [Demo senaryosu](DEMO_SCRIPT.md) — dakika dakika jüri demosu
 - [Sunum](PITCH.md) — 6 sayfalık iskelet
+- [Jüri hazırlığı](JURY_READINESS.md) — kriter bazlı kanıt, canlı sonuçlar ve açık işler
 
 Kararlar (ADR):
 - [001 Şifreleme yerine maskeleme](decisions/001-maskeleme-sifreleme-yerine.md)

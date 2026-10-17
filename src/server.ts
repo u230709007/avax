@@ -25,6 +25,8 @@ export interface ServerOptions {
   tenants?: TenantRegistry;
   /** Servis kapısı açıksa: ajanların bağlanacağı MCP adresi ve herkese açık panel (docs/service.md). */
   service?: { mcpUrl: string; publicUrl: string };
+  /** Arayüz başka bir origin'den sunuluyorsa (örn. Vercel) izin verilen origin'ler; kimlik doğrulama yine token/oturumla. */
+  corsOrigins?: string[];
 }
 
 /** İsteğin hangi Guardian'a gittiği: sahibin (UI token) veya giriş yapan kullanıcınınki (Supabase oturumu). */
@@ -64,6 +66,24 @@ function tokenOk(req: FastifyRequest, expected: string): boolean {
 export async function startServer(owner: Runtime, opts: ServerOptions) {
   const fastify = Fastify({ logger: false });
   await fastify.register(websocket);
+  // CORS: sadece listedeki origin'ler; çerez yok, kimlik başlıkta (x-ui-token / Bearer). Ön kontrol auth'tan önce yanıtlanır.
+  // "*" tek bir alan adı parçasını eşler (Vercel önizleme adresleri: https://avax-*-ekip.vercel.app); nokta eşlemez.
+  const cors = (opts.corsOrigins ?? []).map(
+    (o) => new RegExp(`^${o.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[a-z0-9-]*")}$`, "i"),
+  );
+  fastify.addHook("onRequest", async (req, reply) => {
+    const origin = req.headers.origin;
+    if (!origin || !cors.some((re) => re.test(origin))) return;
+    reply.header("access-control-allow-origin", origin).header("vary", "origin");
+    if (req.method !== "OPTIONS") return;
+    return reply
+      .code(204)
+      .header("access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS")
+      .header("access-control-allow-headers", "content-type, authorization, x-ui-token")
+      .header("access-control-max-age", "600")
+      .send();
+  });
+  if (cors.length) fastify.options("/*", async (_req, reply) => reply.code(204).send());
   fastify.get("/security-tests.json", async (_req, reply) => {
     reply.header("cache-control", "no-store");
     return securityReport(owner.app.guardian.policy.version);

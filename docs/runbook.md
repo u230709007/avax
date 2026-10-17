@@ -31,6 +31,9 @@ Hata durumları (fail-closed):
 | Groq `model_not_found` | ajan yanıt vermez | `GROQ_MODEL` kalkmış; `/openai/v1/models` ile güncel modeli seç |
 
 ## Demo öncesi kontrol listesi
+- `npm run demo:check`: çalışan sunucuda Fuji/policy/audit, geçici anahtarla harici `/atk` bağlantısı ve gerçek piyasa okuması; anahtar sonunda iptal edilir. İkinci DB yazıcısı açmaz. Sonuç `data/demo-check.json`; başarısız kontrolde çıkış kodu 1.
+- `npm run demo:check -- --trade`: ayrıca tek yaklaşık 5 USDT AVAX spot demo önerisi gönderir. Onayları otomatik vermez. ALLOWED yalnızca emir kabulüdür; dolumu OKX demo emir geçmişinden ayrıca doğrula.
+- OKX `54092`: API anahtarının ait olduğu ana/alt hesapta Trade → Demo trading → Spot sayfasındaki feragatnameyi onayla. Pencere yoksa OKX hata mesajına göre dili değiştirip tekrar dene. Her alt hesap ayrı onay gerektirir.
 - [ ] `npm test` ve `forge test` yeşil · [ ] `npm run test:integration` yeşil
 - [ ] Arayüzde OKX "Bağlı", Fuji "Eşleşti", Durum "Aktif" · [ ] Demo hesabında USDT var
 - [ ] `npm run attack-site` açık · [ ] Anchor cüzdanında gas var · [ ] Kill-switch cüzdanı telefonda, Fuji ağı ekli
@@ -40,6 +43,11 @@ Hata durumları (fail-closed):
 ## Vercel (sadece statik arayüz)
 `vercel.json`: `npm run web:build` → `web/dist`. Arayüz `web/` altında olduğu için Vercel'in otomatik `vite build`'i
 kökte `index.html` bulamaz (`UNRESOLVED_ENTRY`). Vercel sadece statik sayfaları sunar; `/api`, `/ws`, `/public/api` için guardian süreci ayrıca çalışmalıdır.
+Canlı veri için guardian PC'de çalışır ve tünelle açılır:
+1. `cloudflared tunnel --url http://127.0.0.1:7070` (veya ngrok sabit alan adı) → `https://xxx...` adresi.
+2. Vercel → Settings → Environment Variables: `VITE_GUARDIAN_URL=https://xxx...` → Redeploy (değer derlemeye gömülür).
+3. PC `.env`: `UI_ORIGINS=https://<proje>.vercel.app` → `npm run dev` yeniden başlat.
+4. Siteye `https://<proje>.vercel.app/?token=<UI_TOKEN>` ile gir. Hızlı tünelin adresi her açılışta değişir: 2. adım tekrarlanır.
 
 ## Kurallar / sınırlar
 Push/commit yok; `.env` ve `data/` git'e girmez.

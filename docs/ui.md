@@ -26,6 +26,7 @@ Geliştirme: `npm run web` (:5173, /api ve /ws :7070'e proxy). Üretim: `npm run
 ## Kurallar / sınırlar
 - Mock yok; veri yoksa boş durum. Emoji yok. 390px'te yatay taşma yok.
 - Onay sadece bu arayüzden verilir; LLM'in onay tool'u yoktur.
+- Guardian adresi `web/src/guardianUrl.ts`: `VITE_GUARDIAN_URL` boşsa aynı origin; doluysa (Vercel) istekler ve WS oraya gider, guardian'da `UI_ORIGINS` CORS izni gerekir.
 
 ## Nasıl test edilir
 `npx tsc -p web/tsconfig.json`, `npm run web:build`; Playwright ile açık/koyu/mobil ekran görüntüsü ve `scrollWidth` kontrolü.

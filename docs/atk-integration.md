@@ -27,6 +27,8 @@ OKX'e tek erişim yolu: `@okx_ai/okx-trade-mcp@1.4.8` (MCP stdio). LLM ATK tool'
 `get_market_view`, `get_portfolio_view`, `get_news_digest`, `read_url`, `propose_trade`, `close_position`, `cancel_order`.
 
 ## Kurallar / sınırlar
+- Emir kabulü için açık `sCode=0` ve boş olmayan `ordId` gerekir; eksik/bozuk yanıt `OKX_ORDER_NOT_CONFIRMED` olur. Kabul, dolum kanıtı değildir.
+- `54092` yanıtı `OKX_DISCLAIMER_REQUIRED` koduna çevrilir; ilgili demo ana/alt hesapta Spot feragatnamesi onaylanmalıdır.
 - OKX API anahtarı: demo trading, sadece Trade yetkisi, Withdraw kapalı, IP whitelist.
 - Anahtarın yeri: `~/.okx/config.toml` (`npx okx config init`) **veya** git'e girmeyen `.env`'de `OKX_API_KEY`, `OKX_SECRET_KEY`, `OKX_PASSPHRASE`. ATK alt sürecine ortamdan sadece bu üç anahtar + temel değişkenler geçer; Anthropic ve cüzdan anahtarları geçmez.
 - Yeni ATK tool'u eklerken gerçek şemayı paketin `dist/index.js`'inden doğrula (LEARN L-005).
