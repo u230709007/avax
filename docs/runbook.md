@@ -37,6 +37,10 @@ Hata durumları (fail-closed):
 - [ ] `npm run attack:replay` ve `npm run killswitch:measure` güncel (panel bu dosyaları gösterir; guardian kapalıyken çalıştır, L-014)
 - [ ] Kanıt paneli tünelle açık (`cloudflared tunnel --url http://127.0.0.1:7072`) · [ ] Otonom mod bir tur denendi · [ ] `docs/DEMO_SCRIPT.md` provası yapıldı
 
+## Vercel (sadece statik arayüz)
+`vercel.json`: `npm run web:build` → `web/dist`. Arayüz `web/` altında olduğu için Vercel'in otomatik `vite build`'i
+kökte `index.html` bulamaz (`UNRESOLVED_ENTRY`). Vercel sadece statik sayfaları sunar; `/api`, `/ws`, `/public/api` için guardian süreci ayrıca çalışmalıdır.
+
 ## Kurallar / sınırlar
 Push/commit yok; `.env` ve `data/` git'e girmez.
 
