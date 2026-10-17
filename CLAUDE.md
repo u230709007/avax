@@ -75,4 +75,4 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.
+2026-10-17 · Sohbette "l is not a function" çökmesi düzeltildi (Chat.tsx scrollIntoView effect dönüşü, L-011); Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.
