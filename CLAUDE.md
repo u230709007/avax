@@ -71,7 +71,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
   Merkle + anchor, Fuji kontratları (8 forge testi), Stripe tarzı arayüz, saldırı sayfaları, attack-replay, docs sistemi.
 - Doğrulandı (yerel Anvil, chain-id 43113): deploy, policy hash eşleşmesi, kill-switch, anchor + zincirde doğrulama.
 - Açık: OKX demo hesabı ve Anthropic ile canlı uçtan uca deneme (bu bulut ortamında OKX/Fuji ağı engelli, anahtar yok).
-- Varsayılan sağlayıcı Groq (`LLM_PROVIDER=groq`, `GROQ_API_KEY`). Gemini ücretsiz kotası dolduğu için geçildi. Groq bu bulut ortamından engelli (proxy 403); host ve karantina sahte cevaplı birim testle doğrulandı, canlı deneme kullanıcı makinesinde.
+- Varsayılan sağlayıcı Groq (`LLM_PROVIDER=groq`, `GROQ_API_KEY`). Gemini ücretsiz kotası dolduğu için geçildi. Groq bu bulut ortamından engelli (proxy 403); kullanıcı makinesinde canlı doğrulandı (sohbette bakiye sorusu çalışıyor, 2026-10-17).
 - Gemini gerçek API ile doğrulandı: karantina (4 saldırı sayfası) ve ajan döngüsü (read_url, ret). Google API bu ortamdan erişilebilir; OKX/Fuji değil.
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
