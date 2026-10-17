@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { llmProvider } from "../../src/llm/provider.js";
 
-const KEYS = ["LLM_PROVIDER", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"] as const;
+const KEYS = ["LLM_PROVIDER", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY"] as const;
 const saved = Object.fromEntries(KEYS.map((k) => [k, process.env[k]]));
 
 function env(v: Partial<Record<(typeof KEYS)[number], string>>) {
@@ -26,6 +26,10 @@ describe("llmProvider", () => {
     expect(llmProvider()).toBe("gemini");
     env({ ANTHROPIC_API_KEY: "a" });
     expect(llmProvider()).toBe("anthropic");
+    env({ GROQ_API_KEY: "q", GEMINI_API_KEY: "g" });
+    expect(llmProvider()).toBe("groq");
+    env({ LLM_PROVIDER: "groq" });
+    expect(llmProvider()).toBe("groq");
   });
   it("anahtar yoksa sohbet kapalı", () => {
     env({});

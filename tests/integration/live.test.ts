@@ -13,6 +13,7 @@ import { quarantineDigest } from "../../src/llm/quarantine.js";
 import { sanitize } from "../../src/ingest/sanitize.js";
 import { ChatHost, type AgentHost } from "../../src/chat/host.js";
 import { GeminiChatHost } from "../../src/chat/geminiHost.js";
+import { GroqChatHost } from "../../src/chat/groqHost.js";
 import { llmProvider } from "../../src/llm/provider.js";
 import { createGuardianMcpServer } from "../../src/mcpServer.js";
 
@@ -71,7 +72,8 @@ describe.skipIf(!hasEnv)("canlı sistem", () => {
 
   it.skipIf(!hasLlm)("Karar ajanı bakiye sorusunda gösterim etiketi yazar; LLM trafiğinde gerçek bakiye geçmez", async () => {
     const server = createGuardianMcpServer(app.guardian);
-    const host: AgentHost = llmProvider() === "gemini" ? new GeminiChatHost(server) : new ChatHost(server);
+    const p = llmProvider();
+    const host: AgentHost = p === "gemini" ? new GeminiChatHost(server) : p === "groq" ? new GroqChatHost(server) : new ChatHost(server);
     await host.connect();
     const traffic: string[] = [];
     host.on("llm_traffic", (t: { payload: unknown }) => traffic.push(JSON.stringify(t.payload)));

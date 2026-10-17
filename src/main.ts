@@ -3,6 +3,7 @@ import { bootstrap } from "./bootstrap.js";
 import { createGuardianMcpServer } from "./mcpServer.js";
 import { ChatHost, type AgentHost } from "./chat/host.js";
 import { GeminiChatHost } from "./chat/geminiHost.js";
+import { GroqChatHost } from "./chat/groqHost.js";
 import { llmProvider } from "./llm/provider.js";
 import { startServer } from "./server.js";
 
@@ -16,7 +17,7 @@ async function main() {
   const provider = llmProvider();
   if (provider) {
     const server = createGuardianMcpServer(app.guardian);
-    chat = provider === "gemini" ? new GeminiChatHost(server) : new ChatHost(server);
+    chat = provider === "gemini" ? new GeminiChatHost(server) : provider === "groq" ? new GroqChatHost(server) : new ChatHost(server);
     await chat.connect();
   }
 

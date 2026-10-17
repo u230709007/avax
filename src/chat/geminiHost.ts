@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import type { Content, FunctionDeclaration } from "@google/genai";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { gemini, GEMINI_DECISION_MODEL, withRetry } from "../llm/gemini.js";
+import { describeGeminiError, gemini, GEMINI_DECISION_MODEL, GEMINI_FALLBACK_MODEL, withModelFallback } from "../llm/gemini.js";
 import { AUTONOMOUS_TASK, callGuardianTool, connectGuardian, safeJson, SYSTEM_PROMPT, type AgentHost } from "./host.js";
 
 const MAX_STEPS = 12;
@@ -53,9 +53,9 @@ export class GeminiChatHost extends EventEmitter implements AgentHost {
       contents.push({ role: "user", parts: [{ text: userText }] });
       let finalText = "";
       for (let step = 0; step < MAX_STEPS; step++) {
-        const res = await withRetry(() =>
+        const res = await withModelFallback(GEMINI_DECISION_MODEL(), GEMINI_FALLBACK_MODEL(), (model) =>
           gemini().models.generateContent({
-            model: GEMINI_DECISION_MODEL(),
+            model,
             contents,
             config: { systemInstruction: SYSTEM_PROMPT, tools: [{ functionDeclarations: this.declarations }] },
           }),
@@ -93,8 +93,9 @@ export class GeminiChatHost extends EventEmitter implements AgentHost {
       return finalText;
     } catch (e) {
       if (mode === "chat") this.history = [];
-      this.emit("error", { message: (e as Error).message.slice(0, 300), ts: Date.now() });
-      throw e;
+      const message = describeGeminiError(e);
+      this.emit("error", { message, ts: Date.now() });
+      throw new Error(message, { cause: e });
     } finally {
       this.busy = false;
     }

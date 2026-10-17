@@ -4,6 +4,7 @@ import { z } from "zod";
 import { SANITIZE_FLAGS, type SanitizeFlag } from "../ingest/sanitize.js";
 import { anthropic, QUARANTINE_MODEL } from "./anthropic.js";
 import { gemini, GEMINI_QUARANTINE_MODEL, withRetry } from "./gemini.js";
+import { GROQ_QUARANTINE_MODEL, groqChat, groqWithRetry } from "./groq.js";
 import { llmProvider } from "./provider.js";
 
 export const QUARANTINE_FLAGS = [...SANITIZE_FLAGS, "QUARANTINE_FAILED", "SOCIAL_ENGINEERING"] as const;
@@ -21,8 +22,8 @@ const DigestItemSchema = z
 
 const DigestSchema = z.object({ items: z.array(DigestItemSchema).max(20) }).strict();
 
-/** Gemini'nin desteklediği sade JSON şema alt kümesi (sonuç yine Zod ile doğrulanır). */
-const GEMINI_DIGEST_JSON_SCHEMA = {
+/** Gemini ve Groq için sade JSON şema alt kümesi (sonuç yine Zod ile doğrulanır). */
+const DIGEST_JSON_SCHEMA = {
   type: "object",
   properties: {
     items: {
@@ -60,7 +61,7 @@ For each distinct news item or the page as a whole, output one item:
 Output only the JSON object.`;
 
 /**
- * Karantina modeli (Haiku 5.5 veya Gemini Flash-Lite) ile şemalı özet. Ham metni gören TEK model budur ve hiç tool'u yoktur.
+ * Karantina modeli (Haiku 5.5, Gemini Flash-Lite veya Groq gpt-oss-20b) ile şemalı özet. Ham metni gören TEK model budur ve hiç tool'u yoktur.
  * Şemaya uymayan çıktı atılır; deterministik sanitize bayrakları her durumda korunur.
  */
 export async function quarantineDigest(text: string, sanitizeFlags: SanitizeFlag[]): Promise<DigestItem[]> {
@@ -70,7 +71,7 @@ export async function quarantineDigest(text: string, sanitizeFlags: SanitizeFlag
   if (!provider) return failed();
   let items: z.infer<typeof DigestSchema>["items"] | undefined;
   try {
-    items = provider === "gemini" ? await geminiDigest(text) : await anthropicDigest(text);
+    items = provider === "gemini" ? await geminiDigest(text) : provider === "groq" ? await groqDigest(text) : await anthropicDigest(text);
   } catch {
     items = undefined;
   }
@@ -89,13 +90,32 @@ async function geminiDigest(text: string) {
       config: {
         systemInstruction: SYSTEM,
         responseMimeType: "application/json",
-        responseJsonSchema: GEMINI_DIGEST_JSON_SCHEMA,
+        responseJsonSchema: DIGEST_JSON_SCHEMA,
       },
     }),
   );
   if (!res.text) return undefined;
   // Model çıktısı da güvenilmez: Zod ile yeniden doğrulanır, şema dışı ise atılır.
   const parsed = DigestSchema.safeParse(JSON.parse(res.text));
+  return parsed.success ? parsed.data.items : undefined;
+}
+
+async function groqDigest(text: string) {
+  const res = await groqWithRetry(() =>
+    groqChat({
+      model: GROQ_QUARANTINE_MODEL(),
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: userContent(text) },
+      ],
+      // strict kapalı: maxItems/minimum gibi kısıtlar strict modda desteklenmez; sonuç Zod ile yine doğrulanır.
+      response_format: { type: "json_schema", json_schema: { name: "digest", schema: DIGEST_JSON_SCHEMA, strict: false } },
+      temperature: 0,
+    }),
+  );
+  const out = res.choices[0]?.message.content;
+  if (!out) return undefined;
+  const parsed = DigestSchema.safeParse(JSON.parse(out));
   return parsed.success ? parsed.data.items : undefined;
 }
 

@@ -13,7 +13,7 @@ her kararın kanıtı Avalanche Fuji'de değiştirilemez şekilde sabitlenir.
   Guardian her işlemde (30 sn cache) yerel `keccak256(policy.json)` ile karşılaştırır.
 - **AuditAnchor**: `anchor(root, fromSeq, toSeq)` sadece anchor cüzdanı; aralıklar boşluksuz (`fromSeq == nextSeq`), geçmiş yeniden yazılamaz.
   Guardian her 20 kararda veya 5 dakikada bir yazar (`src/audit/anchorer.ts`).
-- **Kill-switch**: arayüzdeki "Zincirden durdur" → Core/MetaMask → `pause()`. Guardian ≤30 sn içinde `PAUSED_ONCHAIN`.
+- **Kill-switch**: arayüzdeki "Zincirden durdur" → Core/MetaMask → `pause()`. Guardian ≤30 sn içinde `PAUSED_ONCHAIN`. Göndermeden önce `web/src/killSwitch.ts` ağı (43113), kontratın varlığını, `owner == bağlı cüzdan`ı ve gas bakiyesini kontrol eder; tx yerine açık hata gösterir. En sık hata: DEPLOYER dışında bir hesapla imzalamak (`NotOwner`).
 - **İki ayrı cüzdan**: DEPLOYER (sahip; kill-switch ve policy hash) ve ANCHOR (sadece gas; guardian'da). Trade fonları OKX'te.
 
 Deploy:
