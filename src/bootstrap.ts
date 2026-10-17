@@ -1,5 +1,5 @@
 // docs: docs/ARCHITECTURE.md
-import "dotenv/config";
+import "./env.js";
 import type { Address, Hex } from "viem";
 import { loadPolicy } from "./config/policy.js";
 import { Store } from "./store/db.js";

@@ -39,3 +39,8 @@ Yukarıdaki kontrol listesi.
 
 ## Son güncelleme
 2026-10-17 · OKX anahtarı .env seçeneği.
+
+## Sorun giderme: yanlış LLM sağlayıcısı
+- `.env` tek doğruluk kaynağıdır (`src/env.ts`, `override: true`): sistemde kalmış `LLM_PROVIDER` vb. `.env` değerini ezmez; açılışta "Not: sistemdeki … yerine .env değeri kullanıldı" yazar.
+- Açılışta `Ayarlar:` satırı okunan `.env` yolunu, `Sohbet:` satırı aktif modeli ve `LLM_PROVIDER`'ı gösterir. Arayüzde sohbet ekranının üstünde "Model: …".
+- `Port 7070 kullanımda` → eski guardian hâlâ açık; arayüz ona bağlı kalır. Eski süreci kapatıp yeniden başlat.

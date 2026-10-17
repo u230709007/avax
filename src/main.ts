@@ -1,5 +1,6 @@
 // docs: docs/runbook.md
 import { bootstrap } from "./bootstrap.js";
+import { ENV_PATH, OVERRIDDEN_KEYS } from "./env.js";
 import { createGuardianMcpServer } from "./mcpServer.js";
 import { ChatHost, type AgentHost } from "./chat/host.js";
 import { GeminiChatHost } from "./chat/geminiHost.js";
@@ -63,10 +64,16 @@ async function main() {
   console.log(`Guardian: http://127.0.0.1:${port}  (token ile)`);
   console.log(`OKX ATK: ${app.atkError ? `BAĞLANAMADI: ${app.atkError}` : "bağlı (demo)"}`);
   console.log(`Avalanche: ${chain.reachable ? (chain.policyHashMatches ? "policy eşleşti" : "POLICY HASH UYUŞMUYOR") : `okunamadı: ${chain.error}`}${chain.paused ? " · DURDURULMUŞ" : ""}`);
-  console.log(`Sohbet: ${chat ? `açık (${chat.label})` : "kapalı (GROQ_API_KEY, GEMINI_API_KEY veya ANTHROPIC_API_KEY yok)"}`);
+  console.log(`Ayarlar: ${ENV_PATH ?? ".env BULUNAMADI (komutu proje klasöründen çalıştır)"}`);
+  if (OVERRIDDEN_KEYS.length) console.log(`Not: sistemdeki ${OVERRIDDEN_KEYS.join(", ")} yerine .env değeri kullanıldı`);
+  console.log(`Sohbet: ${chat ? `açık (${chat.label}, LLM_PROVIDER=${process.env.LLM_PROVIDER ?? "boş"})` : "kapalı (GROQ_API_KEY, GEMINI_API_KEY veya ANTHROPIC_API_KEY yok)"}`);
 }
 
 main().catch((e) => {
+  if ((e as { code?: string }).code === "EADDRINUSE") {
+    console.error(`Port ${process.env.GUARDIAN_PORT ?? 7070} kullanımda: eski bir guardian hâlâ çalışıyor. Önce onu kapat (o terminalde Ctrl+C), sonra tekrar başlat.`);
+    process.exit(1);
+  }
   console.error(e instanceof Error ? e.message : e);
   process.exit(1);
 });
