@@ -34,7 +34,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - `src/market/` → RSI/EMA → docs/WORKFLOW.md
 - `contracts/src/` → PolicyRegistry.sol, AuditAnchor.sol → docs/avalanche.md
 - `contracts/test/` → forge testleri → docs/testing.md
-- `web/src/` → Stripe tarzı arayüz (React+Tailwind) → docs/ui.md, DESIGN.md
+- `web/src/` → koyu, ızgaralı, turuncu vurgulu arayüz (React+Tailwind) → docs/ui.md, DESIGN.md
 - `attack-site/` → gerçek saldırı sayfaları (7071) → docs/threat-model.md
 - `scripts/` → derleme, deploy, policy hash, audit doğrulama, docs:check, hook'lar → docs/runbook.md
 - `tests/unit/` → saf birim testler (fixture'lı) → docs/testing.md
@@ -50,7 +50,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - Audit: `npm run audit:verify -- <seq>` · Saldırı tablosu: `npm run attack:replay`
 
 ## Değişmez kurallar
-- GitHub'a push ve commit YOK (kullanıcı açıkça istemedikçe).
+- GitHub'a push ve commit YOK (kullanıcı açıkça istemedikçe). İstendiğinde doğrudan `main`'e push; yeni branch açma (kullanıcı kararı, 2026-10-17).
 - Mock data YOK: uygulama sadece gerçek OKX demo / Fuji / audit verisi gösterir; fixture'lar sadece `tests/`.
 - Arayüzde emoji, gradient, glow YOK; görsel kurallar `DESIGN.md`.
 - Güvenlik kuralları LLM'e/prompt'a değil koda dayanır; LLM'e ham bakiye/ID/adres gitmez.
@@ -67,7 +67,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 ## Güncel durum
 - Tamamlanan: guardian çekirdeği, 7 tool, maskeleme + ekranda maske açma, kural motoru, sanitize + Haiku karantinası,
   ATK MCP istemcisi (tool adları gerçek pakette doğrulandı), Opus 5.5 sohbet/otonom host, SQLite, audit hash zinciri +
-  Merkle + anchor, Fuji kontratları (8 forge testi), Stripe tarzı arayüz, saldırı sayfaları, attack-replay, docs sistemi.
+  Merkle + anchor, Fuji kontratları (8 forge testi), BuildProof tarzı koyu arayüz (ikon rayı + ikon durum çubuğu), saldırı sayfaları, attack-replay, docs sistemi.
 - Doğrulandı (yerel Anvil, chain-id 43113): deploy, policy hash eşleşmesi, kill-switch, anchor + zincirde doğrulama.
 - Açık: OKX demo hesabı ve Anthropic ile canlı uçtan uca deneme (bu bulut ortamında OKX/Fuji ağı engelli, anahtar yok).
 - `.env` git dışıdır; yeni bulut konteynerlerinde yoktur, kullanıcının PC'sinde olmalı (OKX key/secret/passphrase, GEMINI_API_KEY, LLM_PROVIDER=gemini).
@@ -76,4 +76,4 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · `predev` web/dist'i her başlangıçta derler; main dalı açıldı. Sohbette "l is not a function" çökmesi düzeltildi (Chat.tsx scrollIntoView effect dönüşü, L-011); Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.
+2026-10-17 · Arayüz yeniden tasarlandı (BuildProof referansı: DESIGN.md, styles.css, Shell.tsx, ui.tsx); main'e birleştirildi, branch kuralı eklendi. `predev` web/dist'i her başlangıçta derler; main dalı açıldı. Sohbette "l is not a function" çökmesi düzeltildi (Chat.tsx scrollIntoView effect dönüşü, L-011); Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.

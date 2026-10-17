@@ -45,7 +45,7 @@ export function Chat({ state, dispatch }: { state: State; dispatch: Dispatch }) 
   const pending = state.approvals.filter((a) => a.status === "pending" && a.expires > Date.now());
 
   return (
-    <div className="grid h-[calc(100vh-9rem)] grid-cols-1 gap-6 lg:grid-cols-[1fr_24rem]">
+    <div className="grid h-[calc(100vh-19rem)] min-h-[32rem] grid-cols-1 gap-6 lg:grid-cols-[1fr_24rem]">
       <Card className="flex min-h-0 flex-col">
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {state.chat.length === 0 && <Empty>Ajanla konuşmaya başlayın. Bir mesaja tıklayınca LLM'e giden maskeli içerik sağda görünür.</Empty>}
@@ -84,7 +84,7 @@ export function Chat({ state, dispatch }: { state: State; dispatch: Dispatch }) 
           {error && <div className="mb-2 text-xs text-[var(--bad-fg)]">{error}</div>}
           <div className="mb-2 flex flex-wrap gap-1.5">
             {SUGGESTIONS.map((s) => (
-              <button key={s} onClick={() => setText(s)} className="rounded border border-line px-2 py-1 text-xs text-muted hover:bg-surface-muted hover:text-ink">
+              <button key={s} onClick={() => setText(s)} className="rounded-md border border-line px-2 py-1 text-xs text-muted hover:border-faint hover:text-ink">
                 {s}
               </button>
             ))}
@@ -100,7 +100,7 @@ export function Chat({ state, dispatch }: { state: State; dispatch: Dispatch }) 
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Mesaj yazın"
-              className="h-9 flex-1 rounded-md border border-line bg-surface px-3 text-sm outline-none focus:border-accent"
+              className="h-9 flex-1 rounded-lg border border-line bg-bg px-3 text-sm outline-none focus:border-accent-line"
             />
             <Button type="submit" variant="primary" disabled={state.agentBusy || !text.trim()}>
               Gönder
@@ -170,7 +170,7 @@ function ApprovalCard({ approval }: { approval: Approval }) {
     }
   };
   return (
-    <div className="mx-3 mb-3 rounded-md border border-accent bg-accent-soft px-4 py-3">
+    <div className="mx-3 mb-3 rounded-lg border border-accent-line bg-accent-soft px-4 py-3">
       <div className="mb-2 flex items-center gap-2">
         <Badge tone="accent">Onay gerekiyor</Badge>
         <Mono>{approval.id}</Mono>

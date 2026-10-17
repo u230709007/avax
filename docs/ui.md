@@ -14,7 +14,8 @@ Kullanıcının gerçek değerleri, ajanın kararlarını ve LLM'e giden maskeli
 | Kararlar | filtrelenebilir tablo, satır çekmecesi: girdi, kurallar, karantina özeti, çözülen gizli içerik, hash, "Zincirde doğrula" | `/api/decisions/:seq`, `/api/verify/:seq` |
 | Audit | anchor listesi, Snowtrace linkleri, "Şimdi zincire yaz" | `/api/anchors`, `/api/anchors/flush` |
 | Ayarlar | otonom mod, Avalanche durumu, ATK durumu, salt okunur politika | `/api/status`, `/api/policy` |
-Üst bar: OKX (Bağlı / Veri alınamıyor / Bağlı değil), Fuji policy eşleşmesi, durum, "Zincirden durdur".
+Sol ray: sadece ikon; üstüne gelince/tıklayınca adı balonla çıkar, aktif sayfanın adı başlıkta yazar (mobilde alt çubuk).
+Üst bar (sağ, ikon + renkli nokta + balon): OKX (Bağlı / Veri alınamıyor / Bağlı değil), Fuji policy eşleşmesi, kill-switch durumu, canlı akış, "Zincirden durdur" ikon butonu.
 
 API: tümü `x-ui-token` başlığı (WS'te `?token=`) ister; sunucu sadece 127.0.0.1. Token URL'den bir kez alınır, sessionStorage'da tutulur.
 Geliştirme: `npm run web` (:5173, /api ve /ws :7070'e proxy). Üretim: `npm run web:build` → :7070 statik sunar.
@@ -27,4 +28,4 @@ Geliştirme: `npm run web` (:5173, /api ve /ws :7070'e proxy). Üretim: `npm run
 `npx tsc -p web/tsconfig.json`, `npm run web:build`; Playwright ile açık/koyu/mobil ekran görüntüsü ve `scrollWidth` kontrolü.
 
 ## Son güncelleme
-2026-10-16 · tablo taşması düzeltildi (LEARN L-007).
+2026-10-17 · BuildProof tarzı koyu tasarım: ikon rayı, ikon durum çubuğu, büyük sayfa başlıkları (DESIGN.md).

@@ -34,20 +34,24 @@ function TokenGate({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <form
-        className="w-full max-w-sm rounded-lg border border-line bg-surface p-6"
+        className="w-full max-w-md rounded-xl border border-line bg-surface p-8"
         onSubmit={(e) => {
           e.preventDefault();
           useToken(t.trim());
           onDone();
         }}
       >
-        <h1 className="mb-1 text-base font-semibold">Sealed Intent Guardian</h1>
-        <p className="mb-4 text-sm text-muted">Yerel arayüz token'ı (.env içindeki UI_TOKEN).</p>
+        <div className="label">Yerel erişim</div>
+        <h1 className="display mt-3 text-3xl">
+          Sealed Intent <span className="text-accent">Guardian</span>
+        </h1>
+        <p className="mb-6 mt-3 text-sm text-muted">Yerel arayüz token'ı (.env içindeki UI_TOKEN).</p>
         <input
           value={t}
           onChange={(e) => setT(e.target.value)}
           type="password"
-          className="mb-3 h-9 w-full rounded-md border border-line bg-surface px-3 text-sm outline-none focus:border-accent"
+          aria-label="UI token"
+          className="mb-4 h-10 w-full rounded-lg border border-line bg-bg px-3 text-sm outline-none focus:border-accent-line"
         />
         <Button type="submit" variant="primary" disabled={t.trim().length < 16}>Devam</Button>
       </form>

@@ -1,55 +1,60 @@
 # DESIGN.md — Arayüz tasarım sistemi
 
-Referans: Refero'daki **Stripe Dashboard** ekranları (kullanıcı seçimi). Hedef his: sakin, yoğun, güven veren finans paneli.
-Token'ların tek kaynağı `web/src/styles.css` (`:root` + koyu tema). Bu dosya ile birebir tutulur.
+Referans: kullanıcının verdiği **BuildProof** ekranı (koyu zemin, ızgara çizgileri, turuncu vurgu, aralıklı mono etiketler,
+büyük kalın başlıklar). Hedef his: teknik, koyu, "kanıt" odaklı panel.
+Token'ların tek kaynağı `web/src/styles.css` (`:root`, tek tema: koyu). Bu dosya ile birebir tutulur.
 
 ## Yasaklar
-- Emoji yok. Durumlar metin rozetiyle gösterilir ("İzin", "Ret", "Uyarı", "Onay bekliyor").
-- Gradient, glow, glassmorphism, neon, büyük renkli hero, parıltı ikonları, mor-mavi geçişler yok.
-- Dekoratif animasyon yok; sadece hover renk geçişi.
+- Emoji yok. Durumlar metin rozetiyle veya ikon + renkli noktayla gösterilir.
+- Renk gradient'i, glow, glassmorphism, neon, mor-mavi geçişler yok. (Izgara çizgileri `linear-gradient` ile çizilir; renk geçişi değildir.)
+- Dekoratif animasyon yok; sadece hover/odak renk ve opaklık geçişi.
 - Mock / yer tutucu sayı yok. Veri yoksa boş durum metni ("Henüz karar yok") veya "—".
 - Avatar yok; konuşmacı etiketi metin ("Sen", "Ajan").
 
 ## Renkler
-| Token | Açık | Koyu | Kullanım |
-|---|---|---|---|
-| `--bg` | #F6F8FA | #0E1116 | sayfa zemini |
-| `--surface` | #FFFFFF | #161B22 | kart, kenar menü, üst bar |
-| `--surface-muted` | #F9FAFB | #1B2129 | hover, kod blokları |
-| `--border` | #E3E8EE | #2A313C | tüm 1px çizgiler |
-| `--text` | #1A1F36 | #E6EDF3 | birincil metin |
-| `--text-muted` | #697386 | #9AA5B1 | ikincil metin, etiket |
-| `--accent` | #4F46E5 | #818CF8 | tek vurgu: aktif menü, birincil buton, link, grafik |
-| `--ok-bg/fg` | #E6F4EA / #137333 | #0F2E1A / #6FDC8C | İzin |
-| `--bad-bg/fg` | #FCE8E6 / #A50E0E | #3B1214 / #FF8A80 | Ret, hata, kill-switch |
-| `--warn-bg/fg` | #FEF3C7 / #92400E | #3A2A0A / #F5C26B | Uyarı (karantina bayrağı) |
-| `--idle-bg/fg` | #EDF0F3 / #4F566B | #232A33 / #B1BAC4 | Okuma, nötr |
+| Token | Değer | Kullanım |
+|---|---|---|
+| `--bg` | #0A0A0D | sayfa zemini, kenar ray, üst bar |
+| `--surface` | #101014 | kart |
+| `--surface-muted` | #16161B | ipucu balonu, hover |
+| `--border` | #23232A | tüm 1px çizgiler |
+| `--grid` | beyaz %3,5 | arka plan ızgarası (96px) |
+| `--text` / `--text-muted` / `--text-faint` | #F4F4F5 / #8C8C96 / #5F5F69 | metin |
+| `--accent` | #F5A043 | tek vurgu: logo, aktif menü, birincil buton, link, grafik, "Guardian" kelimesi |
+| `--accent-soft` / `--accent-line` | turuncu %10 / %35 | aktif menü zemini / çerçevesi |
+| `--ok` / `--bad` / `--warn` / `--idle` | yeşil / kırmızı / amber / gri (%10 zemin + açık metin) | İzin, Ret/hata/kill-switch, Uyarı, Okuma |
 
-Kural: bir ekranda vurgu rengi en fazla 2–3 yerde. Durum renkleri sadece rozet ve sayı renginde.
+Kural: bir ekranda turuncu vurgu en fazla 3–4 yerde. Durum renkleri sadece rozet, nokta ve sayı renginde.
 
 ## Tipografi
-- UI: Inter 400/500/600; kod, ID, hash, ret kodu: JetBrains Mono 400/500.
-- Taban 14px. Kart başlığı 14px/600. Sayfa başlığı 16px/600.
-- Metrik: 12px büyük harf gri etiket (`.label`, harf aralığı 0.04em) + 24px/600 değer.
-- Tüm rakamlar `font-variant-numeric: tabular-nums` (`.num`). Para tutarları tablolarda sağa hizalı.
-- Para biçimi `tr-TR`: `1.243,50`. Yüzde: `+1,20%`.
+- UI ve başlıklar: DM Sans 400–700. Kod, ID, hash, etiket: JetBrains Mono 400–600.
+- `.label`: mono, 11px, büyük harf, harf aralığı 0.18em, gri. Menü ipuçları, kart başlıkları, metrik etiketleri, tablo başlıkları.
+- `.display`: 700, harf aralığı -0.035em. Sayfa başlığı 40px (Genel bakış 60px), mobilde 30–36px.
+- Sayfa başı: `NN · SAYFA` mono üst etiketi + büyük başlık + 16–18px gri alt metin.
+- Metrik değer 30px/600. Tüm rakamlar `tabular-nums` (`.num`). Para biçimi `tr-TR`: `1.243,50`; yüzde `+1,20%`.
 
 ## Yerleşim
-- Masaüstü: sol sabit kenar menü 224px + üst bar + içerik (`p-6`). Kartlar arası 24px.
-- Mobil (<768px): kenar menü alt sekme çubuğu olur; tablolar kart listesine döner; 16px kenar boşluğu; yatay kaydırma yok.
-- Kart: beyaz zemin, 1px `--border`, 8px köşe, gölge yok. Başlıklı kartta başlık şeridi alt çizgili.
+- Masaüstü: sol sabit **ikon rayı** 72px (logo + 5 ikon, 44px kare). Üstüne gelince/odaklanınca sağda adı balonla çıkar;
+  aktif olan turuncu çerçeve + zemin alır ve adı sayfa başlığında yazar.
+- Üst bar 64px, yapışkan: solda "Sealed Intent **Guardian**", sağda **durum ikonları** (36px kare, köşede renkli nokta,
+  üstüne gelince "OKX demo · Bağlı" gibi balon): OKX, Fuji policy, kill-switch durumu, canlı akış; varsa "Zincirden durdur" ikon butonu (kırmızı).
+- İçerik en fazla 1320px, ortalı, `px-8`. Kartlar arası 24px.
+- Mobil (<768px): ray alt sekme çubuğu olur (sadece ikon; aktifin altında adı yazar); tablolar kart listesine döner; 16px kenar; yatay kaydırma yok.
+- Kart: `--surface`, 1px `--border`, 12px köşe, gölge yok. Başlık şeridi alt çizgili, başlık `.label`.
 - Tablo: başlık satırı `.label`, satır 1px alt çizgi, hover `--surface-muted`, `table-fixed` + uzun hücrelerde `truncate`.
-- Detay: sağdan açılan çekmece (max 576px), arka plan %20 karartma.
+- Detay: sağdan açılan çekmece (max 576px), arka plan %60 karartma.
+- Hata şeridi: amber çerçeveli kutu, sağda kapatma (X).
 
 ## Bileşenler
-- `Badge` tonları: ok, bad, warn, idle, accent. 12px/500, 4px köşe, iç boşluk 6×2px.
-- `Button`: 32px yükseklik; primary (vurgu dolgu), secondary (çerçeveli), danger (kırmızı metin, hover kırmızı zemin).
+- `Badge`: mono 10px büyük harf, 1px tonlu çerçeve, %10 tonlu zemin.
+- `Button`: 36px; primary (turuncu dolgu, koyu metin), secondary (çerçeveli), danger (kırmızı metin, hover kırmızı zemin).
+- `Tip`: ipucu balonu (mono 11px büyük harf), `side="right"` (ray) veya `"bottom"` (üst bar).
 - `Metric`: etiket + değer + ipucu satırı; ilerleme çubuğu 6px, %80 üstü kırmızı.
-- İkonlar: Lucide, 16px, 1.75 çizgi, tek renk, sadece navigasyonda.
-- Grafik: tek seri alan grafiği, 1.5px çizgi, %8 dolgu, eksen çizgisi yok, 11px eksen yazısı.
+- İkonlar: Lucide, 16–18px, 1.75 çizgi, tek renk.
+- Grafik: tek seri alan grafiği, turuncu 1.5px çizgi, %8 dolgu, eksen çizgisi yok, 11px eksen yazısı.
 
 ## Ekranlar
 Genel bakış · Sohbet · Kararlar · Audit · Ayarlar. Ayrıntılar ve veri kaynakları: `docs/ui.md`.
 
 ## Kontrol
-Her arayüz değişikliğinden sonra: açık + koyu tema ve 390px genişlikte ekran görüntüsü; `scrollWidth > innerWidth` olmamalı (LEARN L-007).
+Her arayüz değişikliğinden sonra: 1440px ve 390px ekran görüntüsü; `scrollWidth > innerWidth` olmamalı (LEARN L-007).
