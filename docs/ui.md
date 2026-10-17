@@ -14,7 +14,7 @@ Kullanıcının gerçek değerleri, ajanın kararlarını ve LLM'e giden maskeli
 | Kararlar | filtrelenebilir tablo, satır çekmecesi: girdi, kurallar, karantina özeti, çözülen gizli içerik, hash, "Zincirde doğrula" | `/api/decisions/:seq`, `/api/verify/:seq` |
 | Audit | anchor listesi, Snowtrace linkleri, "Şimdi zincire yaz" | `/api/anchors`, `/api/anchors/flush` |
 | Ayarlar | otonom mod, Avalanche durumu, ATK durumu, salt okunur politika | `/api/status`, `/api/policy` |
-Sol ray: sadece ikon; üstüne gelince/tıklayınca adı balonla çıkar, aktif sayfanın adı başlıkta yazar (mobilde alt çubuk).
+Sol ray: sadece ikon, Sohbet dahil hep görünür (LLM yoksa sayfa nedenini yazar); üstüne gelince adı balonla çıkar, aktif sayfanın adı başlıkta yazar (mobilde alt çubuk).
 Üst bar (sağ, ikon + renkli nokta + balon): OKX (Bağlı / Veri alınamıyor / Bağlı değil), Fuji policy eşleşmesi, kill-switch durumu, canlı akış, "Zincirden durdur" ikon butonu.
 
 API: tümü `x-ui-token` başlığı (WS'te `?token=`) ister; sunucu sadece 127.0.0.1. Token URL'den bir kez alınır, sessionStorage'da tutulur.

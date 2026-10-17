@@ -26,7 +26,7 @@ const HEAD: Record<Page, { title: string; sub: string }> = {
 type Tone = keyof typeof DOT;
 
 export function Shell({ state, page, setPage, children }: { state: State; page: Page; setPage: (p: Page) => void; children: ReactNode }) {
-  const nav = NAV.filter((n) => n.id !== "chat" || state.status?.chatEnabled);
+  const nav = NAV;
   const chain = state.status?.chain;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();

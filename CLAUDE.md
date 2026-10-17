@@ -77,4 +77,4 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts, provider/quarantine/main). Öncesi: BuildProof tarzı arayüz main'e birleştirildi.
+2026-10-17 · Sohbet ikonu her zaman görünür; LLM yoksa sayfa nedenini ve .env adımlarını gösterir (App.tsx ChatOff). Öncesi: Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts).

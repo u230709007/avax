@@ -102,7 +102,7 @@ export function Tip({ text, side = "bottom", children }: { text: ReactNode; side
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-50 whitespace-nowrap rounded-md border border-line bg-surface-muted px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink opacity-0 transition-opacity group-focus-within/tip:opacity-100 group-hover/tip:opacity-100 ${pos}`}
+        className={`pointer-events-none absolute z-50 whitespace-nowrap rounded-md border border-line bg-surface-muted px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink opacity-0 transition-opacity group-has-[:focus-visible]/tip:opacity-100 group-hover/tip:opacity-100 ${pos}`}
       >
         {text}
       </span>
