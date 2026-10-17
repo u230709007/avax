@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "pairs": {
+    "P_AVAX": { "spot": "AVAX-USDT", "swap": "AVAX-USDT-SWAP" },
+    "P_BTC": { "spot": "BTC-USDT", "swap": "BTC-USDT-SWAP" },
+    "P_ETH": { "spot": "ETH-USDT", "swap": "ETH-USDT-SWAP" }
+  },
+  "quoteCcy": "USDT",
+  "maxOrderUsdt": 50,
+  "maxOrderPctOfBalance": 20,
+  "rolling24hMaxUsdt": 300,
+  "maxOrdersPerMinute": 2,
+  "maxLeverage": 3,
+  "requireStopLoss": { "spot": false, "swap": true },
+  "maxStopLossPct": 5,
+  "maxTakeProfitPct": 50,
+  "priceBandPct": 0.5,
+  "dailyLossLimitPct": 5,
+  "humanApprovalAboveUsdt": 25,
+  "approvalTtlSeconds": 120,
+  "balanceBucketsUsdt": [50, 200],
+  "chainCacheSeconds": 30,
+  "anchorEveryDecisions": 20,
+  "anchorEverySeconds": 300
+}

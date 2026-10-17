@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+data/
+contracts/out/
+web/dist/
+*.log
+contracts/cache/
+contracts/artifacts/

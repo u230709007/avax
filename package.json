@@ -1,0 +1,56 @@
+{
+  "name": "sealed-intent-guardian",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Prompt-injection'a dayanıklı AI trade ajanı: OKX Agent Trade Kit + deterministik guardian + Avalanche Proof of Guard",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "mcp": "tsx src/mcpStdio.ts",
+    "web": "vite --config web/vite.config.ts",
+    "web:build": "vite build --config web/vite.config.ts",
+    "attack-site": "tsx attack-site/serve.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "docs:check": "tsx scripts/docs-check.ts",
+    "contracts:build": "tsx scripts/compile-contracts.ts",
+    "deploy:fuji": "tsx scripts/deploy-fuji.ts",
+    "policy:set-hash": "tsx scripts/set-policy-hash.ts",
+    "audit:verify": "tsx scripts/verify-audit.ts",
+    "attack:replay": "tsx examples/attack-replay.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@fastify/static": "^10.1.6",
+    "@fastify/websocket": "^11.3.4",
+    "@google/genai": "^2.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@okx_ai/okx-trade-mcp": "1.4.8",
+    "dotenv": "^18.0.8",
+    "fastify": "^5.12.7",
+    "viem": "^2.57.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "lucide-react": "^1.58.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "recharts": "^3.10.1",
+    "solc": "^0.8.37",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
