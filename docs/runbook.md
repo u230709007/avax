@@ -12,7 +12,7 @@ Sıfırdan çalışır hale getirmek ve demo gününde sürprizleri önlemek.
 3. `.env`: `cp .env.example .env`; `VAULT_HMAC_KEY=$(openssl rand -hex 32)`, `UI_TOKEN=$(openssl rand -hex 16)`, `ANTHROPIC_API_KEY`.
 4. Cüzdanlar: DEPLOYER (sahip, kill-switch'i telefondaki Core/MetaMask'ta tut) ve ANCHOR (sadece gas). Fuji faucet'ten test AVAX.
 5. `npm run contracts:build && npm run deploy:fuji` → adresleri `.env`'e yaz.
-6. `npm run web:build && npm run dev` → `http://127.0.0.1:7070/?token=<UI_TOKEN>`.
+6. `npm run dev` → `http://127.0.0.1:7070/?token=<UI_TOKEN>` (`predev` arayüzü `web/dist`e her başlangıçta yeniden derler; eski derleme sunulmaz).
 7. Saldırı demosu: `npm run attack-site` (ayrı terminal).
 8. B modu (Claude Code): `.mcp.json` → `{"mcpServers":{"guardian":{"command":"npm","args":["run","-s","mcp"],"cwd":"<repo>"}}}` (sadece guardian kayıtlı olsun).
 

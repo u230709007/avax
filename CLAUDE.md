@@ -43,7 +43,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 
 ## Komutlar
 - Kurulum: `npm install` · OKX: `npx okx config init` (demo profil, sadece trade yetkisi)
-- Çalıştır: `npm run dev` (guardian+API :7070) · `npm run web` (arayüz :5173) · `npm run attack-site` (:7071)
+- Çalıştır: `npm run dev` (arayüzü derler + guardian+API :7070) · `npm run web` (arayüz :5173) · `npm run attack-site` (:7071)
 - Claude Desktop modu: `npm run mcp`
 - Test: `npm test` · `npm run test:integration` · `npm run typecheck` · `npm run docs:check`
 - Kontrat: `npm run contracts:build` · `forge test --use <solc yolu>` · `npm run deploy:fuji` · `npm run policy:set-hash`
@@ -70,9 +70,10 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
   Merkle + anchor, Fuji kontratları (8 forge testi), Stripe tarzı arayüz, saldırı sayfaları, attack-replay, docs sistemi.
 - Doğrulandı (yerel Anvil, chain-id 43113): deploy, policy hash eşleşmesi, kill-switch, anchor + zincirde doğrulama.
 - Açık: OKX demo hesabı ve Anthropic ile canlı uçtan uca deneme (bu bulut ortamında OKX/Fuji ağı engelli, anahtar yok).
-- `.env` bu çalışma alanında (git dışı): OKX key/secret/passphrase ve GEMINI_API_KEY dolu, LLM_PROVIDER=gemini.
+- `.env` git dışıdır; yeni bulut konteynerlerinde yoktur, kullanıcının PC'sinde olmalı (OKX key/secret/passphrase, GEMINI_API_KEY, LLM_PROVIDER=gemini).
+- `main` dalı açıldı; `npm run dev` artık `predev` ile önce `web/dist`'i derler (eski arayüz derlemesi sunulmaz).
 - Gemini gerçek API ile doğrulandı: karantina (4 saldırı sayfası) ve ajan döngüsü (read_url, ret). Google API bu ortamdan erişilebilir; OKX/Fuji değil.
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · Sohbette "l is not a function" çökmesi düzeltildi (Chat.tsx scrollIntoView effect dönüşü, L-011); Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.
+2026-10-17 · `predev` web/dist'i her başlangıçta derler; main dalı açıldı. Sohbette "l is not a function" çökmesi düzeltildi (Chat.tsx scrollIntoView effect dönüşü, L-011); Gemini sağlayıcısı (src/llm/gemini.ts, src/chat/geminiHost.ts, src/llm/provider.ts); OKX anahtarları .env'den.
