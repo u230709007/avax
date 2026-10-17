@@ -30,6 +30,8 @@ export interface Status {
   chain: ChainSnapshot;
   anchorer: { lastError?: string };
   chatEnabled: boolean;
+  /** Sohbet/otonom ajanı yürüten model, ör. "Groq (openai/gpt-oss-120b)". */
+  agent: string | null;
   autonomous: { enabled: boolean; intervalSeconds: number } | null;
   tools: string[];
 }

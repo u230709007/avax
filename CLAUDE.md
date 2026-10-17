@@ -75,4 +75,4 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
 
 ## Son güncelleme
-2026-10-17 · Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts), Gemini 429 ayrımı + yedek model, kill-switch ön kontrolleri.
+2026-10-17 · Sohbet ekranında aktif model gösterimi. Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts), Gemini 429 ayrımı + yedek model, kill-switch ön kontrolleri.

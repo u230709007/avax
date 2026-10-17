@@ -63,7 +63,7 @@ async function main() {
   console.log(`Guardian: http://127.0.0.1:${port}  (token ile)`);
   console.log(`OKX ATK: ${app.atkError ? `BAĞLANAMADI: ${app.atkError}` : "bağlı (demo)"}`);
   console.log(`Avalanche: ${chain.reachable ? (chain.policyHashMatches ? "policy eşleşti" : "POLICY HASH UYUŞMUYOR") : `okunamadı: ${chain.error}`}${chain.paused ? " · DURDURULMUŞ" : ""}`);
-  console.log(`Sohbet: ${chat ? `açık (${chat.label})` : "kapalı (GEMINI_API_KEY veya ANTHROPIC_API_KEY yok)"}`);
+  console.log(`Sohbet: ${chat ? `açık (${chat.label})` : "kapalı (GROQ_API_KEY, GEMINI_API_KEY veya ANTHROPIC_API_KEY yok)"}`);
 }
 
 main().catch((e) => {

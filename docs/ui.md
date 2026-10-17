@@ -14,6 +14,7 @@ Kullanıcının gerçek değerleri, ajanın kararlarını ve LLM'e giden maskeli
 | Kararlar | filtrelenebilir tablo, satır çekmecesi: girdi, kurallar, karantina özeti, çözülen gizli içerik, hash, "Zincirde doğrula" | `/api/decisions/:seq`, `/api/verify/:seq` |
 | Audit | anchor listesi, Snowtrace linkleri, "Şimdi zincire yaz" | `/api/anchors`, `/api/anchors/flush` |
 | Ayarlar | otonom mod, Avalanche durumu, ATK durumu, salt okunur politika | `/api/status`, `/api/policy` |
+Sohbet ekranının üstünde aktif model (`/api/status` → `agent`, ör. "Groq (openai/gpt-oss-120b)").
 Üst bar: OKX (Bağlı / Veri alınamıyor / Bağlı değil), Fuji policy eşleşmesi, durum, "Zincirden durdur".
 
 API: tümü `x-ui-token` başlığı (WS'te `?token=`) ister; sunucu sadece 127.0.0.1. Token URL'den bir kez alınır, sessionStorage'da tutulur.
