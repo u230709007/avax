@@ -17,6 +17,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - `src/tools.ts` → LLM'e açık 7 tool'un şeması → docs/atk-integration.md
 - `src/mcpServer.ts` → guardian MCP sunucusu (LLM'in tek ucu) → docs/ARCHITECTURE.md
 - `src/bootstrap.ts` → açılış (workflow 0), bağımlılıkları kurar → docs/ARCHITECTURE.md
+- `src/env.ts` → `.env` yükleme (sistem değişkenlerini ezer) → docs/runbook.md
 - `src/main.ts` → (A) web + sohbet + otonom döngü girişi → docs/runbook.md
 - `src/mcpStdio.ts` → (B) Claude Desktop/Code için stdio girişi → docs/runbook.md
 - `src/server.ts` → Fastify API + WebSocket, 127.0.0.1 + token → docs/ui.md
