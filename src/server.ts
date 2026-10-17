@@ -7,7 +7,8 @@ import websocket from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
 import type { WebSocket } from "ws";
 import type { App } from "./bootstrap.js";
-import type { AgentHost } from "./chat/host.js";
+import type { SwitchingHost } from "./chat/switch.js";
+import type { LlmProvider } from "./llm/provider.js";
 import { detokenize } from "./chat/detokenize.js";
 import { AuditLog } from "./audit/log.js";
 import { SNOWTRACE_FUJI } from "./chain/avalanche.js";
@@ -16,7 +17,7 @@ import { GUARDIAN_TOOLS } from "./tools.js";
 export interface ServerOptions {
   port: number;
   uiToken: string;
-  chat?: AgentHost;
+  chat?: SwitchingHost;
   autonomous?: { get(): boolean; set(v: boolean): void; intervalSeconds: number };
 }
 
@@ -72,6 +73,7 @@ export async function startServer(app: App, opts: ServerOptions) {
       anchorer: { lastError: app.anchorer.lastError },
       chatEnabled: Boolean(opts.chat),
       agent: opts.chat?.label ?? null,
+      llm: opts.chat?.providers() ?? [],
       autonomous: opts.autonomous ? { enabled: opts.autonomous.get(), intervalSeconds: opts.autonomous.intervalSeconds } : null,
       tools: GUARDIAN_TOOLS.map((t) => t.name),
     };
@@ -163,6 +165,21 @@ export async function startServer(app: App, opts: ServerOptions) {
   fastify.post("/api/chat/reset", async () => {
     opts.chat?.resetHistory();
     return { ok: true };
+  });
+
+  /** Sağ üst model seçici: Groq varsayılan; anahtarı olan Gemini/Claude'a geçilebilir. Kurallar değişmez. */
+  fastify.post("/api/settings/llm", async (req, reply) => {
+    if (!opts.chat) return reply.code(404).send({ error: "chat_disabled" });
+    const p = String((req.body as { provider?: string } | undefined)?.provider ?? "") as LlmProvider;
+    if (!opts.chat.providers().some((x) => x.id === p && x.available)) return reply.code(400).send({ error: "provider_unavailable" });
+    try {
+      await opts.chat.use(p);
+    } catch (e) {
+      return reply.code(409).send({ error: (e as Error).message.slice(0, 200) });
+    }
+    const out = { agent: opts.chat.label, llm: opts.chat.providers() };
+    broadcast("llm", out);
+    return out;
   });
 
   fastify.post("/api/settings/autonomous", async (req, reply) => {

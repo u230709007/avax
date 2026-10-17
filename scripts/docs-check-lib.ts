@@ -1,6 +1,6 @@
 // docs: docs/testing.md
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative as nativeRelative } from "node:path";
 import { execSync } from "node:child_process";
 
 export const LIMITS = { claude: 150, design: 250, learn: 120, learnRules: 40, doc: 300 } as const;
@@ -11,6 +11,9 @@ export interface CheckResult {
   /** CLAUDE.md, kod değiştiği halde güncellenmemiş mi? (Stop hook bunu engelleyici sayar.) */
   claudeMdStale: boolean;
 }
+
+/** Windows'ta da "/" ayraçlı göreli yol (LEARN L-012). */
+const relative = (from: string, to: string) => nativeRelative(from, to).replaceAll("\\", "/");
 
 const lines = (p: string) => readFileSync(p, "utf8").split("\n").length;
 

@@ -1,6 +1,6 @@
 import { useEffect, useReducer } from "react";
 import { api, connectWs, type WsEvent } from "./api";
-import type { Anchor, Approval, AuditRow, ChainSnapshot, ChatMessage, Portfolio, Snapshot, Status } from "./types";
+import type { Anchor, Approval, AuditRow, ChainSnapshot, ChatMessage, LlmOption, Portfolio, Snapshot, Status } from "./types";
 
 export interface State {
   wsOpen: boolean;
@@ -21,6 +21,7 @@ type Action =
   | { type: "portfolio"; portfolio?: Portfolio; error?: string }
   | { type: "snapshot"; snapshot: Snapshot }
   | { type: "chain"; chain: ChainSnapshot }
+  | { type: "llm"; agent: string; llm: LlmOption[] }
   | { type: "decisions"; rows: AuditRow[] }
   | { type: "audit"; row: AuditRow }
   | { type: "anchors"; anchors: Anchor[] }
@@ -48,6 +49,8 @@ function reducer(s: State, a: Action): State {
       return s.portfolio ? { ...s, portfolio: { ...s.portfolio, snapshot: a.snapshot }, portfolioError: undefined } : s;
     case "chain":
       return s.status ? { ...s, status: { ...s.status, chain: { ...s.status.chain, ...a.chain } } } : s;
+    case "llm":
+      return s.status ? { ...s, status: { ...s.status, agent: a.agent, llm: a.llm } } : s;
     case "decisions":
       return { ...s, decisions: a.rows };
     case "audit":
@@ -121,6 +124,12 @@ export function useGuardian() {
           case "anchor":
             dispatch({ type: "anchor", anchor: e.data as Anchor });
             break;
+          case "llm": {
+            const d = e.data as { agent: string; llm: LlmOption[] };
+            dispatch({ type: "llm", agent: d.agent, llm: d.llm });
+            dispatch({ type: "chat_system", text: `Ajan modeli: ${d.agent}` });
+            break;
+          }
           case "approval":
             dispatch({ type: "approval", approval: e.data as Approval });
             break;

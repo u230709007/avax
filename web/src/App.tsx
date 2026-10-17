@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { hasToken, useToken } from "./api";
+import { GridBackground } from "./components/GridBackground";
 import { Shell, type Page } from "./components/Shell";
 import { Button, Card, Mono } from "./components/ui";
 import { Audit } from "./pages/Audit";
@@ -11,8 +12,12 @@ import { useGuardian } from "./store";
 
 export function App() {
   const [authed, setAuthed] = useState(hasToken());
-  if (!authed) return <TokenGate onDone={() => setAuthed(true)} />;
-  return <Authed />;
+  return (
+    <>
+      <GridBackground />
+      <div className="relative z-10">{authed ? <Authed /> : <TokenGate onDone={() => setAuthed(true)} />}</div>
+    </>
+  );
 }
 
 function Authed() {

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Activity, FileCheck2, LayoutDashboard, MessageSquare, OctagonX, Play, Plug, Power, Radio, Settings, ShieldCheck, X } from "lucide-react";
+import { Activity, Cpu, FileCheck2, LayoutDashboard, MessageSquare, OctagonX, Play, Plug, Power, Radio, Settings, ShieldCheck, X } from "lucide-react";
 import type { State } from "../store";
 import { api } from "../api";
 import { setPaused } from "../killSwitch";
@@ -51,8 +51,8 @@ export function Shell({ state, page, setPage, children }: { state: State; page: 
   const idx = nav.findIndex((n) => n.id === page) + 1;
 
   return (
-    <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col items-center border-r border-line bg-bg md:flex">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1440px] md:border-x md:border-line">
+      <aside className="sticky top-0 z-30 hidden h-screen w-[72px] shrink-0 flex-col items-center border-r border-line bg-bg/85 backdrop-blur md:flex">
         <div className="flex h-16 w-full items-center justify-center border-b border-line">
           <Logo />
         </div>
@@ -74,8 +74,8 @@ export function Shell({ state, page, setPage, children }: { state: State; page: 
         </nav>
       </aside>
 
-      <div className="flex min-h-screen flex-col pb-20 md:pb-0 md:pl-[72px]">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-bg/90 px-4 backdrop-blur md:px-8">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col pb-20 md:pb-0">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-bg/85 px-4 backdrop-blur sm:gap-3 md:px-8">
           <span className="md:hidden">
             <Logo />
           </span>
@@ -83,6 +83,7 @@ export function Shell({ state, page, setPage, children }: { state: State; page: 
             <span className="hidden sm:inline">Sealed Intent </span>
             <span className="text-accent">Guardian</span>
           </span>
+          {state.status?.chatEnabled && <ModelPicker state={state} onError={setErr} />}
           <StatusIcon icon={Plug} tone={okx[0]} label={`OKX demo · ${okx[1]}`} />
           <StatusIcon icon={ShieldCheck} tone={policy[0]} label={`Fuji policy · ${policy[1]}`} />
           <StatusIcon icon={Power} tone={chain?.paused ? "bad" : "ok"} label={`Durum · ${chain?.paused ? "Durduruldu" : "Aktif"}`} />
@@ -145,6 +146,44 @@ function Logo() {
     <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-ink">
       <ShieldCheck size={20} strokeWidth={2.25} />
     </span>
+  );
+}
+
+/** Sağ üst model seçici: Groq varsayılan; anahtarı olan Gemini/Claude seçilebilir. Kurallar hangisinde olursa olsun aynıdır. */
+function ModelPicker({ state, onError }: { state: State; onError: (m: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const llm = state.status?.llm ?? [];
+  const active = llm.find((p) => p.active)?.id ?? "";
+  const change = async (provider: string) => {
+    setBusy(true);
+    try {
+      await api("/api/settings/llm", { method: "POST", body: { provider } });
+    } catch (e) {
+      onError(`Model değiştirilemedi: ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Tip text={state.status?.agent ? `Ajan · ${state.status.agent}` : "Ajan modeli"}>
+      <span className="relative flex h-9 w-9 shrink-0 items-center rounded-lg border border-line text-muted hover:text-ink focus-within:border-accent-line sm:w-[112px]">
+        <Cpu size={16} strokeWidth={1.75} className="pointer-events-none absolute left-2.5" />
+        <select
+          aria-label="Ajan modeli"
+          value={active}
+          disabled={busy || state.agentBusy}
+          onChange={(e) => void change(e.target.value)}
+          className="h-full w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent pl-8 pr-2 font-mono text-[11px] uppercase tracking-[0.14em] text-transparent outline-none disabled:cursor-wait disabled:opacity-60 sm:text-ink"
+        >
+          {llm.map((p) => (
+            <option key={p.id} value={p.id} disabled={!p.available} className="bg-surface text-ink">
+              {p.label}
+              {p.available ? "" : " · anahtar yok"}
+            </option>
+          ))}
+        </select>
+      </span>
+    </Tip>
   );
 }
 

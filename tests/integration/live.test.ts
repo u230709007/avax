@@ -2,7 +2,7 @@
  * Gerçek sistemlere karşı entegrasyon testleri (mock yok):
  *  - OKX Demo (ATK, ~/.okx/config.toml demo profil)
  *  - Avalanche Fuji (POLICY_REGISTRY_ADDRESS)
- *  - Anthropic API (ANTHROPIC_API_KEY)
+ *  - LLM: aktif sağlayıcı (varsayılan Groq; GROQ_API_KEY / GEMINI_API_KEY / ANTHROPIC_API_KEY)
  * Gerekli ortam yoksa ilgili blok atlanır. Çalıştırma: npm run test:integration
  */
 import "dotenv/config";
@@ -11,8 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bootstrap, type App } from "../../src/bootstrap.js";
 import { quarantineDigest } from "../../src/llm/quarantine.js";
 import { sanitize } from "../../src/ingest/sanitize.js";
-import { ChatHost, type AgentHost } from "../../src/chat/host.js";
-import { GeminiChatHost } from "../../src/chat/geminiHost.js";
+import { SwitchingHost } from "../../src/chat/switch.js";
 import { llmProvider } from "../../src/llm/provider.js";
 import { createGuardianMcpServer } from "../../src/mcpServer.js";
 
@@ -40,7 +39,8 @@ describe.skipIf(!hasEnv)("canlı sistem", () => {
     const snap = await app.guardian.snapshot(true);
     expect(snap.totalEqUsd).toBeGreaterThanOrEqual(0);
     const view = JSON.stringify(await app.guardian.getPortfolioView());
-    for (const h of snap.holdings) expect(view).not.toContain(String(h.eq));
+    // Kısa tam sayılar ("1") yüzde gibi başka alanlarda doğal olarak geçer; ayırt edici değerler aranır.
+    for (const h of snap.holdings) for (const v of [h.eq, h.eqUsd]) if (String(v).length >= 4) expect(view).not.toContain(String(v));
   });
 
   it("piyasa görünümü gerçek fiyat ve göstergeler döner", async () => {
@@ -70,8 +70,7 @@ describe.skipIf(!hasEnv)("canlı sistem", () => {
   });
 
   it.skipIf(!hasLlm)("Karar ajanı bakiye sorusunda gösterim etiketi yazar; LLM trafiğinde gerçek bakiye geçmez", async () => {
-    const server = createGuardianMcpServer(app.guardian);
-    const host: AgentHost = llmProvider() === "gemini" ? new GeminiChatHost(server) : new ChatHost(server);
+    const host = new SwitchingHost(() => createGuardianMcpServer(app.guardian));
     await host.connect();
     const traffic: string[] = [];
     host.on("llm_traffic", (t: { payload: unknown }) => traffic.push(JSON.stringify(t.payload)));

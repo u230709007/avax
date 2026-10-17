@@ -1,7 +1,7 @@
 // docs: docs/llm.md
 /** Groq OpenAI uyumlu Chat Completions API'si. SDK yok, düz fetch. */
-export const GROQ_DECISION_MODEL = () => process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
-export const GROQ_QUARANTINE_MODEL = () => process.env.GROQ_QUARANTINE_MODEL ?? "llama-3.1-8b-instant";
+export const GROQ_DECISION_MODEL = () => process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
+export const GROQ_QUARANTINE_MODEL = () => process.env.GROQ_QUARANTINE_MODEL ?? "openai/gpt-oss-20b";
 
 const URL = "https://api.groq.com/openai/v1/chat/completions";
 

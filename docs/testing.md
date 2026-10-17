@@ -10,11 +10,11 @@ Neyin nasıl test edildiği ve doküman kontrolleri.
 ## Akış
 | Komut | Ne | Ağ |
 |---|---|---|
-| `npm test` | 60 birim test: vault, policy, sanitize + saldırı sayfaları, guardian (test çifti ile), audit/Merkle, docs:check | yok |
+| `npm test` | 65 birim test: vault, policy, sanitize + saldırı sayfaları, guardian (test çifti ile), audit/Merkle, docs:check | yok |
 | `npm run typecheck` | sunucu TS | yok |
 | `npx tsc -p web/tsconfig.json` | arayüz TS | yok |
 | `forge test --use <solc>` | 8 kontrat testi (yetki, boşluksuz anchor) | yok |
-| `npm run test:integration` | gerçek ATK + OKX demo + Fuji + Anthropic; ortam yoksa atlanır | var |
+| `npm run test:integration` | gerçek ATK + OKX demo + Fuji + aktif LLM (varsayılan Groq); ortam yoksa atlanır | var |
 | `npm run attack:replay` | gerçek guardian'a saldırı tablosu | OKX/Fuji |
 | `npm run docs:check` | satır sınırları, modül haritası, INDEX, kaynak başlıkları, CLAUDE.md güncelliği | yok |
 
@@ -24,7 +24,7 @@ Neyin nasıl test edildiği ve doküman kontrolleri.
 - Bulut ortamında OKX/Fuji engelli: zincir için Anvil (LEARN L-004).
 
 ## Nasıl test edilir
-Yukarıdaki tablo. Son çalıştırma: 60/60 birim, 8/8 forge, entegrasyon 3 geçti / 2 OKX ağı yok / 2 Anthropic anahtarı yok.
+Yukarıdaki tablo. Son çalıştırma (Windows PC, 2026-10-17): 65/65 birim, 8/8 forge, 7/7 entegrasyon (Groq), attack:replay 9/9 durduruldu.
 
 ## Son güncelleme
-2026-10-16 · ilk sürüm.
+2026-10-17 · PC'de tüm katmanlar yeşil; Foundry Windows'a kuruldu.

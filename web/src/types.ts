@@ -25,11 +25,20 @@ export interface ChainSnapshot {
   explorer?: string;
 }
 
+export interface LlmOption {
+  id: string;
+  label: string;
+  available: boolean;
+  active: boolean;
+}
+
 export interface Status {
   okx: { connected: boolean; demo: boolean; error?: string; missingTools: string[] };
   chain: ChainSnapshot;
   anchorer: { lastError?: string };
   chatEnabled: boolean;
+  agent: string | null;
+  llm: LlmOption[];
   autonomous: { enabled: boolean; intervalSeconds: number } | null;
   tools: string[];
 }

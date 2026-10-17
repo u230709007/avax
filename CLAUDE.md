@@ -25,7 +25,7 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 - `src/masking/` → Vault: tanıtıcı, kova, gösterim etiketi, sızıntı tarama → docs/masking.md
 - `src/ingest/` → sanitize: gizli metin/Mors/base64/unicode → docs/quarantine.md
 - `src/llm/` → sağlayıcı seçimi, Anthropic + Gemini + Groq istemcileri, karantina → docs/llm.md, docs/quarantine.md
-- `src/chat/` → AgentHost: Opus (host.ts) / Gemini (geminiHost.ts) / Groq (groqHost.ts) tool döngüsü, ekranda maske açma → docs/llm.md, docs/masking.md
+- `src/chat/` → AgentHost: Opus (host.ts) / Gemini (geminiHost.ts) / Groq (groqHost.ts), SwitchingHost (switch.ts: arayüzden model seçimi), ekranda maske açma → docs/llm.md, docs/masking.md
 - `src/upstream/` → ATK MCP istemcisi + tool allowlist + OKX tipleri → docs/atk-integration.md
 - `src/chain/` → Fuji: PolicyRegistry okuma, AuditAnchor yazma → docs/avalanche.md
 - `src/audit/` → hash zinciri, Merkle, anchor döngüsü → docs/audit.md
@@ -67,14 +67,14 @@ Kural hash'i, kill-switch ve audit Merkle kökleri Avalanche Fuji'de doğrulanab
 ## Güncel durum
 - Tamamlanan: guardian çekirdeği, 7 tool, maskeleme + ekranda maske açma, kural motoru, sanitize + Haiku karantinası,
   ATK MCP istemcisi (tool adları gerçek pakette doğrulandı), Opus 5.5 sohbet/otonom host, SQLite, audit hash zinciri +
-  Merkle + anchor, Fuji kontratları (8 forge testi), BuildProof tarzı koyu arayüz (ikon rayı + ikon durum çubuğu), saldırı sayfaları, attack-replay, docs sistemi.
-- Doğrulandı (yerel Anvil, chain-id 43113): deploy, policy hash eşleşmesi, kill-switch, anchor + zincirde doğrulama.
-- Açık: OKX demo hesabı ve Anthropic ile canlı uçtan uca deneme (bu bulut ortamında OKX/Fuji ağı engelli, anahtar yok).
-- `.env` git dışıdır; yeni bulut konteynerlerinde yoktur, kullanıcının PC'sinde olmalı (OKX key/secret/passphrase, GEMINI_API_KEY, LLM_PROVIDER=gemini).
-- `main` dalı açıldı; `npm run dev` artık `predev` ile önce `web/dist`'i derler (eski arayüz derlemesi sunulmaz).
-- Gemini gerçek API ile doğrulandı: karantina (4 saldırı sayfası) ve ajan döngüsü (read_url, ret). Google API bu ortamdan erişilebilir; OKX/Fuji değil.
-- Groq sağlayıcısı eklendi (kullanıcı Groq kullanıyor: `LLM_PROVIDER=groq`, `GROQ_API_KEY`); bu ortamdan api.groq.com engelli, canlı test edilmedi.
-- Sıradaki adım: kullanıcının PC'sinde aynı `.env` + passphrase → `npm run test:integration` → Fuji deploy.
+  Merkle + anchor, Fuji kontratları (8 forge testi), siyah-beyaz arayüz (ortalanmış çerçeve, fareyle aydınlanan ızgara), saldırı sayfaları, attack-replay, docs sistemi.
+- Ajan: Groq varsayılan (`openai/gpt-oss-120b`, karantina `gpt-oss-20b`); sağ üst seçiciden Gemini/Claude (anahtar varsa).
+- Kullanıcı PC'sinde (Windows) canlı doğrulandı: 65/65 birim, 8/8 forge (Foundry 1.8.5 kuruldu), 7/7 entegrasyon, attack:replay 9/9,
+  Fuji deploy + policy eşleşmesi + anchor + `audit:verify` DOĞRULANDI, kill-switch pause → `PAUSED_ONCHAIN` → unpause,
+  otonom tur (Groq), B modu `.mcp.json` (7 tool listelendi).
+- Açık: OKX emirleri `50123` "no trading permission for the Crypto" ile reddediyor; `/account/config` perm=`read_only,withdraw,trade`.
+  Kullanıcı OKX'te anahtarı düzenlemeli/yeniden oluşturmalı (Withdraw KAPALI olmalı, şu an açık). Sonra gerçek emir + demo provası.
+- `.env` git dışıdır; PC'de OKX üçlüsü + GROQ_API_KEY dolu, LLM_PROVIDER=groq; ANTHROPIC_API_KEY boş, GEMINI_API_KEY yok.
 
 ## Son güncelleme
-2026-10-17 · Sohbet ikonu her zaman görünür; LLM yoksa sayfa nedenini ve .env adımlarını gösterir (App.tsx ChatOff). Öncesi: Groq sağlayıcısı (src/llm/groq.ts, src/chat/groqHost.ts).
+2026-10-17 · Arayüzden model seçimi (src/chat/switch.ts), Groq gpt-oss, siyah-beyaz + ızgara arayüz, .mcp.json, canlı doğrulamalar. Öncesi: Sohbet ikonu hep görünür, LLM yoksa ChatOff.

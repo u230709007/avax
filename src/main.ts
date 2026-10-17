@@ -1,23 +1,19 @@
 // docs: docs/runbook.md
 import { bootstrap } from "./bootstrap.js";
 import { createGuardianMcpServer } from "./mcpServer.js";
-import { ChatHost, type AgentHost } from "./chat/host.js";
-import { GeminiChatHost } from "./chat/geminiHost.js";
-import { GroqChatHost } from "./chat/groqHost.js";
+import { SwitchingHost } from "./chat/switch.js";
 import { llmProvider } from "./llm/provider.js";
 import { startServer } from "./server.js";
 
-/** (A) modu: web arayüzü + Opus 5.5 sohbet/otonom ajanı + guardian. */
+/** (A) modu: web arayüzü + sohbet/otonom ajanı (varsayılan Groq, arayüzden Gemini/Claude) + guardian. */
 async function main() {
   const app = await bootstrap();
   const uiToken = process.env.UI_TOKEN;
   if (!uiToken || uiToken.length < 16) throw new Error("UI_TOKEN en az 16 karakter olmalı");
 
-  let chat: AgentHost | undefined;
-  const provider = llmProvider();
-  if (provider) {
-    const server = createGuardianMcpServer(app.guardian);
-    chat = provider === "gemini" ? new GeminiChatHost(server) : provider === "groq" ? new GroqChatHost(server) : new ChatHost(server);
+  let chat: SwitchingHost | undefined;
+  if (llmProvider()) {
+    chat = new SwitchingHost(() => createGuardianMcpServer(app.guardian));
     await chat.connect();
   }
 

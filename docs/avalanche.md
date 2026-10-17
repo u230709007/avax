@@ -32,4 +32,4 @@ Test AVAX: Fuji faucet (core.app). Explorer: https://testnet.snowtrace.io
 `forge test --use <solc>` (8 test). Yerel: `anvil --chain-id 43113` + `FUJI_RPC_URL=http://127.0.0.1:8545` ile deploy → kill-switch → anchor → `/api/verify/:seq` (LEARN L-004).
 
 ## Son güncelleme
-2026-10-16 · yerel Anvil'de uçtan uca doğrulandı.
+2026-10-17 · Fuji'de canlı: deploy, policy eşleşmesi, 5+ anchor, `audit:verify` DOĞRULANDI, pause → `PAUSED_ONCHAIN` → unpause.

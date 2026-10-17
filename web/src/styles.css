@@ -1,29 +1,32 @@
 @import "tailwindcss";
 
-/* Tasarım token'ları: DESIGN.md ile birebir. Renkler sadece buradan gelir. Tek tema: koyu. */
+/* Tasarım token'ları: DESIGN.md ile birebir. Renkler sadece buradan gelir. Tek tema: koyu, siyah-beyaz. */
 :root {
   color-scheme: dark;
-  --bg: #0a0a0d;
-  --surface: #101014;
-  --surface-muted: #16161b;
-  --border: #23232a;
-  --grid: rgba(255, 255, 255, 0.035);
-  --text: #f4f4f5;
-  --text-muted: #8c8c96;
-  --text-faint: #5f5f69;
-  --accent: #f5a043;
-  --accent-ink: #120c05;
-  --accent-soft: rgba(245, 160, 67, 0.1);
-  --accent-line: rgba(245, 160, 67, 0.35);
+  --bg: #0a0a0a;
+  --surface: #0f0f0f;
+  --surface-muted: #171717;
+  --border: #262626;
+  --grid: rgba(255, 255, 255, 0.045);
+  --grid-lit: rgba(255, 255, 255, 0.28);
+  --text: #f5f5f5;
+  --text-muted: #8f8f8f;
+  --text-faint: #5c5c5c;
+  --accent: #ffffff;
+  --accent-ink: #0a0a0a;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --accent-line: rgba(255, 255, 255, 0.35);
   --ok-bg: rgba(74, 222, 128, 0.1);
   --ok-fg: #6ee7a0;
   --bad-bg: rgba(248, 113, 113, 0.1);
   --bad-fg: #fb8a8a;
-  --warn-bg: rgba(245, 160, 67, 0.1);
-  --warn-fg: #f5c27a;
+  --warn-bg: rgba(255, 255, 255, 0.06);
+  --warn-fg: #d4d4d4;
   --idle-bg: rgba(255, 255, 255, 0.05);
-  --idle-fg: #b4b4bd;
-  --chart: #f5a043;
+  --idle-fg: #b3b3b3;
+  --chart: #ffffff;
+  --mx: -1000px;
+  --my: -1000px;
 }
 
 @theme inline {
@@ -45,16 +48,37 @@
 html,
 body {
   background-color: var(--bg);
-  /* Arka plan ızgarası: 1px çizgiler, 96px aralık. */
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 96px 96px;
-  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Arka plan ızgarası: 1px çizgiler, 64px aralık, sayfanın arkasında sabit.
+ * Fare çevresindeki çizgiler aydınlanır: aynı ızgaranın parlak kopyası, imlecin etrafında dairesel maskeyle görünür.
+ */
+.grid-bg,
+.grid-bg::after {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-size: 64px 64px;
+  background-position: center top;
+}
+.grid-bg {
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+}
+.grid-bg::after {
+  content: "";
+  background-image:
+    linear-gradient(var(--grid-lit) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-lit) 1px, transparent 1px);
+  -webkit-mask-image: radial-gradient(240px circle at var(--mx) var(--my), #000 0%, transparent 100%);
+  mask-image: radial-gradient(240px circle at var(--mx) var(--my), #000 0%, transparent 100%);
 }
 
 .num {
